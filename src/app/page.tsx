@@ -1,103 +1,182 @@
-import Image from "next/image";
+'use client'
+import { useState, useEffect } from "react"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card } from "@/components/ui/card"
+import { BudgetDashboard } from "@/components/BudgetDashboard"
+import { BudgetManager } from "@/components/BudgetManager"
+import { ExpenseTracker } from "@/components/ExpenseTracker"
+import { BudgetAnalytics } from "@/components/BudgetAnalytics"
+import { BarChart3, PlusCircle, DollarSign, TrendingUp } from "lucide-react"
 
-export default function Home() {
+interface Transaction {
+  id: string
+  description: string
+  amount: number
+  category: string
+  date: string
+  type: 'expense' | 'income'
+}
+
+interface BudgetItem {
+  id: string
+  category: string
+  budgeted: number
+  spent: number
+  color: string
+}
+
+// Sample data for demonstration
+const sampleBudgets: BudgetItem[] = [
+  { id: '1', category: 'Transportation', budgeted: 500, spent: 320, color: '#ef4444' },
+  { id: '2', category: 'Entertainment', budgeted: 200, spent: 150, color: '#f97316' },
+  { id: '3', category: 'Rent', budgeted: 1350, spent: 180, color: '#eab308' },
+  { id: '4', category: 'Fast Food', budgeted: 300, spent: 275, color: '#22c55e' },
+  { id: '5', category: 'Groceries', budgeted: 400, spent: 225, color: '#06b6d4' },
+]
+
+const sampleTransactions: Transaction[] = [
+  { id: '1', description: 'Chevron', amount: 85.50, category: 'Transportation', date: '2024-12-15', type: 'expense' },
+  { id: '2', description: 'Safeway', amount: 45.00, category: 'Groceries', date: '2024-12-14', type: 'expense' },
+  { id: '3', description: 'Monthly Salary', amount: 3500.00, category: 'Salary', date: '2024-12-01', type: 'income' },
+  { id: '4', description: 'Five Guys', amount: 25.00, category: 'Fast Food', date: '2024-12-13', type: 'expense' },
+  { id: '5', description: 'Safeway', amount: 120.00, category: 'Groceries', date: '2024-12-3', type: 'expense' },
+  { id: '6', description: 'Ticketmaster', amount: 167.30, category: 'Entertainment', date: '2024-12-11', type: 'expense' },
+  { id: '7', description: 'Safeway', amount: 92.75, category: 'Groceries', date: '2024-12-10', type: 'expense' },
+  { id: '8', description: 'Chipotle', amount: 38.20, category: 'Fast Food', date: '2024-12-09', type: 'expense' },
+  { id: '9', description: 'Rent', amount: 1350.00, category: 'Rent', date: '2024-12-08', type: 'expense' },
+  { id: '10', description: 'In n out', amount: 13.56, category: 'Fast Food', date: '2024-12-07', type: 'expense' }
+]
+
+export default function App() {
+  const [budgets, setBudgets] = useState<BudgetItem[]>(sampleBudgets)
+  const [transactions, setTransactions] = useState<Transaction[]>(sampleTransactions)
+
+  // Calculate totals
+  const totalIncome = transactions
+    .filter(t => t.type === 'income')
+    .reduce((sum, t) => sum + t.amount, 0)
+
+  const totalExpenses = transactions
+    .filter(t => t.type === 'expense')
+    .reduce((sum, t) => sum + t.amount, 0)
+
+  // Load data from localStorage on mount
+  useEffect(() => {
+    const savedBudgets = localStorage.getItem('budgets')
+    const savedTransactions = localStorage.getItem('transactions')
+    
+    if (savedBudgets) {
+      setBudgets(JSON.parse(savedBudgets))
+    }
+    
+    if (savedTransactions) {
+      setTransactions(JSON.parse(savedTransactions))
+    }
+  }, [])
+
+  // Save to localStorage when data changes
+  useEffect(() => {
+    localStorage.setItem('budgets', JSON.stringify(budgets))
+  }, [budgets])
+
+  useEffect(() => {
+    localStorage.setItem('transactions', JSON.stringify(transactions))
+  }, [transactions])
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="min-h-screen bg-background">
+      <div className="container mx-auto px-4 py-8 max-w-7xl">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="mb-2">EVA Budget</h1>
+          <p className="text-muted-foreground">
+            Manage your finances, track expenses, and achieve your savings goals
+          </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        {/* Main Content */}
+        <Tabs defaultValue="dashboard" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 mb-8">
+            <TabsTrigger value="dashboard" className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              Dashboard
+            </TabsTrigger>
+            <TabsTrigger value="budgets" className="flex items-center gap-2">
+              <PlusCircle className="w-4 h-4" />
+              Budgets
+            </TabsTrigger>
+            <TabsTrigger value="expenses" className="flex items-center gap-2">
+              <DollarSign className="w-4 h-4" />
+              Expenses
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4" />
+              Analytics
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="dashboard">
+            <BudgetDashboard 
+              budgets={budgets}
+              totalIncome={totalIncome}
+              totalExpenses={totalExpenses}
+            />
+          </TabsContent>
+
+          <TabsContent value="budgets">
+            <BudgetManager 
+              budgets={budgets}
+              onUpdateBudgets={setBudgets}
+            />
+          </TabsContent>
+
+          <TabsContent value="expenses">
+            <ExpenseTracker 
+              transactions={transactions}
+              budgets={budgets}
+              onUpdateTransactions={setTransactions}
+              onUpdateBudgets={setBudgets}
+            />
+          </TabsContent>
+
+          <TabsContent value="analytics">
+            <BudgetAnalytics 
+              transactions={transactions}
+              budgets={budgets}
+            />
+          </TabsContent>
+        </Tabs>
+
+        {/* Getting Started Guide */}
+        {budgets.length === 0 && transactions.length === 0 && (
+          <Card className="p-8 mt-8 text-center">
+            <h3 className="mb-4">Welcome to your Budget Tracker!</h3>
+            <p className="text-muted-foreground mb-6">
+              Get started by setting up your budget categories and adding your first transaction.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left">
+              <div className="p-4 border rounded-lg">
+                <h4 className="mb-2">1. Set Up Budgets</h4>
+                <p className="text-sm text-muted-foreground">
+                  Create budget categories like groceries, entertainment, and utilities.
+                </p>
+              </div>
+              <div className="p-4 border rounded-lg">
+                <h4 className="mb-2">2. Track Expenses</h4>
+                <p className="text-sm text-muted-foreground">
+                  Add your income and expenses to see how you are doing against your budget.
+                </p>
+              </div>
+              <div className="p-4 border rounded-lg">
+                <h4 className="mb-2">3. Analyze Trends</h4>
+                <p className="text-sm text-muted-foreground">
+                  View charts and insights to understand your spending patterns.
+                </p>
+              </div>
+            </div>
+          </Card>
+        )}
+      </div>
     </div>
-  );
+  )
 }

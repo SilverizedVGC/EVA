@@ -1,0 +1,123 @@
+import { Card } from "./ui/card"
+import { Progress } from "./ui/progress"
+import { Badge } from "./ui/badge"
+import { TrendingUp, TrendingDown, DollarSign, Target } from "lucide-react"
+
+interface BudgetItem {
+  id: string
+  category: string
+  budgeted: number
+  spent: number
+  color: string
+}
+
+interface DashboardProps {
+  budgets: BudgetItem[]
+  totalIncome: number
+  totalExpenses: number
+}
+
+export function BudgetDashboard({ budgets, totalIncome, totalExpenses }: DashboardProps) {
+  const totalBudgeted = budgets.reduce((sum, budget) => sum + budget.budgeted, 0)
+  const totalSpent = budgets.reduce((sum, budget) => sum + budget.spent, 0)
+  const remainingBudget = totalBudgeted - totalSpent
+  const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpenses) / totalIncome) * 100 : 0
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(amount)
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Overview Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-muted-foreground">Total Income</p>
+              <p className="text-green-600">{formatCurrency(totalIncome)}</p>
+            </div>
+            <TrendingUp className="h-8 w-8 text-green-600" />
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-muted-foreground">Total Expenses</p>
+              <p className="text-red-600">{formatCurrency(totalExpenses)}</p>
+            </div>
+            <TrendingDown className="h-8 w-8 text-red-600" />
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-muted-foreground">Remaining Budget</p>
+              <p className={remainingBudget >= 0 ? "text-green-600" : "text-red-600"}>
+                {formatCurrency(remainingBudget)}
+              </p>
+            </div>
+            <Target className="h-8 w-8 text-blue-600" />
+          </div>
+        </Card>
+
+        <Card className="p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-muted-foreground">Savings Rate</p>
+              <p className={savingsRate >= 20 ? "text-green-600" : savingsRate >= 10 ? "text-yellow-600" : "text-red-600"}>
+                {savingsRate.toFixed(1)}%
+              </p>
+            </div>
+            <DollarSign className="h-8 w-8 text-blue-600" />
+          </div>
+        </Card>
+      </div>
+
+      {/* Budget Categories Progress */}
+      <Card className="p-6">
+        <h3 className="mb-4">Budget Categories</h3>
+        <div className="space-y-4">
+          {budgets.map((budget) => {
+            const percentage = budget.budgeted > 0 ? (budget.spent / budget.budgeted) * 100 : 0
+            const isOverBudget = percentage > 100
+            
+            return (
+              <div key={budget.id} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div 
+                      className="w-3 h-3 rounded-full" 
+                      style={{ backgroundColor: budget.color }}
+                    />
+                    <span>{budget.category}</span>
+                    {isOverBudget && (
+                      <Badge variant="destructive">Over Budget</Badge>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <span className="text-sm">
+                      {formatCurrency(budget.spent)} / {formatCurrency(budget.budgeted)}
+                    </span>
+                  </div>
+                </div>
+                <Progress 
+                  value={Math.min(percentage, 100)} 
+                  className="h-2"
+                />
+                <div className="text-right text-xs text-muted-foreground">
+                  {percentage.toFixed(1)}% used
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </Card>
+    </div>
+  )
+}
