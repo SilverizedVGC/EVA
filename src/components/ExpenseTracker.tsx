@@ -9,46 +9,24 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Badge } from "./ui/badge"
 import { Plus, Calendar, DollarSign, ChevronUp, ChevronDown, Upload } from "lucide-react"
 import { StatementImport } from "./StatementImport"
-
-interface Transaction {
-  id: string
-  description: string
-  amount: number
-  category: string
-  date: string
-  type: 'expense' | 'income'
-}
-
-interface BudgetItem {
-  id: string
-  category: string
-  budgeted: number
-  spent: number
-  color: string
-}
+import UserData from "./classes/UserData"
+import Transaction from "./classes/Transaction"
 
 interface ExpenseTrackerProps {
-  transactions: Transaction[]
-  budgets: BudgetItem[]
+  userData: UserData
   onUpdateTransactions: (transactions: Transaction[]) => void
-  onUpdateBudgets: (budgets: BudgetItem[]) => void
 }
 
 type SortField = 'date' | 'description' | 'category' | 'type' | 'amount'
 type SortDirection = 'asc' | 'desc'
 
-export function ExpenseTracker({ 
-  transactions, 
-  budgets, 
-  onUpdateTransactions, 
-  onUpdateBudgets 
-}: ExpenseTrackerProps) {
+export function ExpenseTracker({ userData, onUpdateTransactions }: ExpenseTrackerProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [description, setDescription] = useState("")
-  const [amount, setAmount] = useState("")
-  const [category, setCategory] = useState("")
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  const [amount, setAmount] = useState(0)
+  const [categoryId, setCategoryId] = useState("")
+  const [date, setDate] = useState(new Date())
   const [type, setType] = useState<'expense' | 'income'>('expense')
   const [sortField, setSortField] = useState<SortField>('date')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
@@ -71,49 +49,52 @@ export function ExpenseTracker({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!description || !amount || !category || !date) return
+    if (!description || !categoryId || !amount || !date) return
+    if (amount <= 0) return
 
-    const transactionAmount = parseFloat(amount)
-    if (isNaN(transactionAmount) || transactionAmount <= 0) return
-
-    const newTransaction: Transaction = {
-      id: Date.now().toString(),
+    const newTransaction = new Transaction(
+      Date.now().toString(),
+      new Date(date),
+      amount,
+      type,
       description,
-      amount: transactionAmount,
-      category,
-      date,
-      type
-    }
+      categoryId
+    )
 
-    onUpdateTransactions([...transactions, newTransaction])
+    onUpdateTransactions([...userData.getTransactions(), newTransaction])
 
     // Update budget spent amount if it's an expense
-    if (type === 'expense') {
-      const updatedBudgets = budgets.map(budget =>
-        budget.category === category
-          ? { ...budget, spent: budget.spent + transactionAmount }
-          : budget
-      )
-      onUpdateBudgets(updatedBudgets)
-    }
+    // if (type === 'expense') {
+    //   const updatedBudgets = budgets.map(budget =>
+    //     budget.category === category
+    //       ? { ...budget, spent: budget.spent + transactionAmount }
+    //       : budget
+    //   )
+    //   onUpdateBudgets(updatedBudgets)
+    // }
 
     // Reset form
+    setDate(new Date())
+    setAmount(0)
     setDescription("")
-    setAmount("")
-    setCategory("")
-    setDate(new Date().toISOString().split('T')[0])
+    setCategoryId("")
     setType('expense')
     setIsDialogOpen(false)
   }
 
   const getAvailableCategories = () => {
     if (type === 'expense') {
-      return budgets.map(budget => budget.category)
+      return userData.getCategories().map(category => category.getName())
     } else {
-      // For income, we can have different categories
-      return ['Salary', 'Freelance', 'Business', 'Investments', 'Other']
+      return []
     }
   }
+
+  // const checkTransactions = (): boolean => {
+  //   const newTransactions = userData.getTransactions().filter(transaction => userData.getCategoryById(transaction.getCategoryId()) !== undefined)
+  //   onUpdateTransactions(newTransactions)
+  //   return true
+  // }
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -127,30 +108,30 @@ export function ExpenseTracker({
   }
 
   const getSortedTransactions = () => {
-    return [...transactions].sort((a, b) => {
+    return [...userData.getTransactions()].sort((a, b) => {
       let aValue: string | number
       let bValue: string | number
 
       switch (sortField) {
         case 'date':
-          aValue = new Date(a.date).getTime()
-          bValue = new Date(b.date).getTime()
+          aValue = new Date(a.getDate()).getTime()
+          bValue = new Date(b.getDate()).getTime()
           break
         case 'description':
-          aValue = a.description.toLowerCase()
-          bValue = b.description.toLowerCase()
+          aValue = a.getDescription().toLowerCase()
+          bValue = b.getDescription().toLowerCase()
           break
         case 'category':
-          aValue = a.category.toLowerCase()
-          bValue = b.category.toLowerCase()
+          aValue = a.getCategoryId().toLowerCase()
+          bValue = b.getCategoryId().toLowerCase()
           break
         case 'type':
-          aValue = a.type
-          bValue = b.type
+          aValue = a.getType()
+          bValue = b.getType()
           break
         case 'amount':
-          aValue = a.amount
-          bValue = b.amount
+          aValue = a.getAmount()
+          bValue = b.getAmount()
           break
         default:
           return 0
@@ -177,35 +158,35 @@ export function ExpenseTracker({
       <ChevronDown className="w-4 h-4" />
   }
 
-  const handleImportTransactions = (importedTransactions: Transaction[]) => {
-    // Add imported transactions to existing transactions
-    onUpdateTransactions([...transactions, ...importedTransactions])
+  // const handleImportTransactions = (importedTransactions: Transaction[]) => {
+  //   // Add imported transactions to existing transactions
+  //   onUpdateTransactions([...transactions, ...importedTransactions])
 
-    // Update budget spent amounts for expenses
-    const updatedBudgets = [...budgets]
-    importedTransactions.forEach(transaction => {
-      if (transaction.type === 'expense') {
-        const budgetIndex = updatedBudgets.findIndex(budget => budget.category === transaction.category)
-        if (budgetIndex !== -1) {
-          updatedBudgets[budgetIndex] = {
-            ...updatedBudgets[budgetIndex],
-            spent: updatedBudgets[budgetIndex].spent + transaction.amount
-          }
-        }
-      }
-    })
-    onUpdateBudgets(updatedBudgets)
-  }
+  //   // Update budget spent amounts for expenses
+  //   const updatedBudgets = [...budgets]
+  //   importedTransactions.forEach(transaction => {
+  //     if (transaction.type === 'expense') {
+  //       const budgetIndex = updatedBudgets.findIndex(budget => budget.category === transaction.category)
+  //       if (budgetIndex !== -1) {
+  //         updatedBudgets[budgetIndex] = {
+  //           ...updatedBudgets[budgetIndex],
+  //           spent: updatedBudgets[budgetIndex].spent + transaction.amount
+  //         }
+  //       }
+  //     }
+  //   })
+  //   onUpdateBudgets(updatedBudgets)
+  // }
 
-  if (showImport) {
-    return (
-      <StatementImport
-        budgets={budgets}
-        onBack={() => setShowImport(false)}
-        onImportTransactions={handleImportTransactions}
-      />
-    )
-  }
+  // if (showImport) {
+  //   return (
+  //     <StatementImport
+  //       budgets={budgets}
+  //       onBack={() => setShowImport(false)}
+  //       onImportTransactions={handleImportTransactions}
+  //     />
+  //   )
+  // }
 
   return (
     <div className="space-y-6">
@@ -233,7 +214,7 @@ export function ExpenseTracker({
                   <Label htmlFor="type">Type</Label>
                   <Select value={type} onValueChange={(value: 'expense' | 'income') => {
                     setType(value)
-                    setCategory("") // Reset category when type changes
+                    setCategoryId("") // Reset category when type changes
                   }}>
                     <SelectTrigger>
                       <SelectValue />
@@ -251,7 +232,7 @@ export function ExpenseTracker({
                     type="number"
                     step="0.01"
                     value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
+                    onChange={(e) => setAmount(Number(e.target.value))}
                     placeholder="0.00"
                     required
                   />
@@ -271,7 +252,7 @@ export function ExpenseTracker({
 
               <div>
                 <Label htmlFor="category">Category</Label>
-                <Select value={category} onValueChange={setCategory} required>
+                <Select value={categoryId} onValueChange={setCategoryId} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
@@ -290,8 +271,8 @@ export function ExpenseTracker({
                 <Input
                   id="date"
                   type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
+                  value={date.toDateString()}
+                  onChange={(e) => setDate(new Date(e.target.value))}
                   required
                 />
               </div>
@@ -316,7 +297,7 @@ export function ExpenseTracker({
 
       {/* All Transactions */}
       <Card className="p-6">
-        <h3 className="mb-4">All Transactions ({transactions.length})</h3>
+        <h3 className="mb-4">All Transactions ({userData.getTransactions().length})</h3>
         {sortedTransactions.length === 0 ? (
           <div className="text-center text-muted-foreground py-8">
             <DollarSign className="w-12 h-12 mx-auto mb-2 opacity-50" />
@@ -376,29 +357,29 @@ export function ExpenseTracker({
             </TableHeader>
             <TableBody>
               {sortedTransactions.map((transaction) => (
-                <TableRow key={transaction.id}>
+                <TableRow key={transaction.getId()}>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-muted-foreground" />
-                      {formatDate(transaction.date)}
+                      {formatDate(transaction.getDate().toString())}
                     </div>
                   </TableCell>
-                  <TableCell>{transaction.description}</TableCell>
+                  <TableCell>{transaction.getDescription()}</TableCell>
                   <TableCell>
                     <Badge variant="outline">
-                      {transaction.category}
+                      {userData.getCategoryById(transaction.getCategoryId())?.getName()}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <Badge 
-                      variant={transaction.type === 'income' ? 'default' : 'secondary'}
+                      variant={transaction.getType() === 'income' ? 'default' : 'secondary'}
                     >
-                      {transaction.type}
+                      {transaction.getType()}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <span className={transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}>
-                      {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                    <span className={transaction.getType() === 'income' ? 'text-green-600' : 'text-red-600'}>
+                      {transaction.getType() === 'income' ? '+' : '-'}{formatCurrency(transaction.getAmount())}
                     </span>
                   </TableCell>
                 </TableRow>

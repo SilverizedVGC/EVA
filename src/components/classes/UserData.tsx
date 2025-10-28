@@ -1,12 +1,16 @@
 import Category from "./Category";
+import Transaction from "./Transaction";
 
 export default class UserData {
     private categories: Category[];
+    private transactions: Transaction[];
 
     constructor() {
         this.categories = [];
+        this.transactions = [];
     }
 
+    /* CATEGORY METHODS */
     getCategories(): Category[] {
         return this.categories;
     }
@@ -29,7 +33,6 @@ export default class UserData {
             this.categories[index].setName(updatedCategory.getName());
             this.categories[index].setColor(updatedCategory.getColor());
             this.categories[index].setBudget(updatedCategory.getBudget());
-            this.categories[index].setTransactions(updatedCategory.getTransactions());
         }
     }
 
@@ -37,18 +40,14 @@ export default class UserData {
         this.categories = this.categories.filter(category => category.getId() !== id);
     }
 
-    size(): number {
+    categorySize(): number {
         return this.categories.length;
     }
 
     calculateTotalIncome(): number {
         let total = 0;
         this.categories.forEach(category => {
-            category.getTransactions().forEach(transaction => {
-                if (transaction.getType() === 'income') {
-                    total += transaction.getAmount();
-                }
-            });
+            total += this.calculateIncome(category.getId());
         });
         return total;
     }
@@ -56,19 +55,15 @@ export default class UserData {
     calculateTotalExpense(): number {
         let total = 0;
         this.categories.forEach(category => {
-            category.getTransactions().forEach(transaction => {
-                if (transaction.getType() === 'expense') {
-                    total += transaction.getAmount();
-                }
-            });
+            total += this.calculateExpense(category.getId());
         });
         return total;
     }
 
-    calculateTotalRemainBudget(): number {
+    calculateTotalRemainingBudget(): number {
         let total = 0;
         this.categories.forEach(category => {
-            total += category.calculateRemainBudget();
+            total += this.calculateRemainingBudget(category.getId());
         });
         return total;
     }
@@ -80,20 +75,94 @@ export default class UserData {
         return ((totalIncome - totalExpense) / totalIncome) * 100;
     }
 
-    sortDate(): void {
-        this.categories.forEach(category => category.sortDate());
+    // sortCategoryDate(): void {
+    //     this.categories.forEach(category => category.sortDate());
+    // }
+
+    // sortCategoryName(): void {
+    //     this.categories.sort((a, b) => a.getName().localeCompare(b.getName()));
+    // }
+
+    // searchCategoryDate(date: Date): Category[] {
+    //     return this.categories.filter(category => {
+    //         const categoryDate = category.getDate();
+    //         return categoryDate.getFullYear() === date.getFullYear() &&
+    //                categoryDate.getMonth() === date.getMonth() &&
+    //                categoryDate.getDate() === date.getDate();
+    //     });
+    // }
+
+    /* TRANSACTION METHODS */
+    getTransactions(): Transaction[] {
+        return this.transactions;
     }
 
-    sortName(): void {
-        this.categories.sort((a, b) => a.getName().localeCompare(b.getName()));
+    getTransactionById(id: string): Transaction | undefined {
+        return this.transactions.find(transaction => transaction.getId() === id);
     }
 
-    searchDate(date: Date): Category[] {
-        return this.categories.filter(category => {
-            const categoryDate = category.getDate();
-            return categoryDate.getFullYear() === date.getFullYear() &&
-                   categoryDate.getMonth() === date.getMonth() &&
-                   categoryDate.getDate() === date.getDate();
+    setTransactions(transactions: Transaction[]): void {
+        this.transactions = transactions;
+    }
+
+    addTransaction(transaction: Transaction): void {
+        this.transactions.push(transaction);
+    }
+
+    editTransaction(id: string, updatedTransaction: Transaction): void {
+        const index = this.transactions.findIndex(transaction => transaction.getId() === id);
+        if (index !== -1) {
+            this.transactions[index].setDescription(updatedTransaction.getDescription());
+            this.transactions[index].setCategoryId(updatedTransaction.getCategoryId());
+        }
+    }
+
+    removeTransaction(id: string): void {
+        this.transactions = this.transactions.filter(transaction => transaction.getId() !== id);
+    }
+
+    transactionSize(): number {
+        return this.transactions.length;
+    }
+
+    calculateIncome(categoryId: string): number {
+        return this.transactions
+            .filter(transaction => transaction.getType() === 'income' && transaction.getCategoryId() === categoryId)
+            .reduce((sum, transaction) => sum + transaction.getAmount(), 0);
+    }
+
+    calculateExpense(castegoryId: string): number {
+        return this.transactions
+            .filter(transaction => transaction.getType() === 'expense' && transaction.getCategoryId() === castegoryId)
+            .reduce((sum, transaction) => sum + transaction.getAmount(), 0);
+    }
+
+    calculateRemainingBudget(categoryId: string): number {
+        const category = this.getCategoryById(categoryId);
+        if (!category) return 0;
+        return category.getBudget() - this.calculateExpense(categoryId);
+    }
+
+    calculateUsage(categoryId: string): number {
+        const category = this.getCategoryById(categoryId);
+        if (!category) return 0;
+        return category.getBudget() === 0 ? 0 : (this.calculateExpense(categoryId) / category.getBudget()) * 100;
+    }
+
+    sortTransactionDate(): void {
+        this.transactions.sort((a, b) => b.getDate().getTime() - a.getDate().getTime());
+    }
+
+    sortTransactionAmount(): void {
+        this.transactions.sort((a, b) => b.getAmount() - a.getAmount());
+    }
+
+    searchTransactionDate(date: Date): Transaction[] {
+        return this.transactions.filter(transaction => {
+            const transactionDate = transaction.getDate();
+            return transactionDate.getFullYear() === date.getFullYear() &&
+                   transactionDate.getMonth() === date.getMonth() &&
+                   transactionDate.getDate() === date.getDate();
         });
     }
 }

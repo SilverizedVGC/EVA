@@ -11,24 +11,22 @@ import Transaction from "@/components/classes/Transaction"
 import Category from "@/components/classes/Category"
 import UserData from "@/components/classes/UserData"
 
-const transaction1 = new Transaction('1', new Date('2024-12-15'), 85.50, 'expense', 'Chevron', 'Transportation');
-const transaction2 = new Transaction('2', new Date('2024-12-14'), 40.00, 'expense', 'Game', 'Entertainment');
-const transaction3 = new Transaction('2', new Date('2024-12-14'), 40.00, 'expense', 'Movie Theater', 'Entertainment');
-const transaction4 = new Transaction('3', new Date('2024-12-13'), 1200.00, 'income', 'Salary', 'Income');
+const transaction1 = new Transaction('1', new Date('2024-12-15'), 85.50, 'expense', 'Chevron', '1');
+const transaction2 = new Transaction('2', new Date('2024-12-14'), 40.00, 'expense', 'Game', '2');
+const transaction3 = new Transaction('2', new Date('2024-12-14'), 40.00, 'expense', 'Movie Theater', '2');
+const transaction4 = new Transaction('3', new Date('2024-12-13'), 1200.00, 'income', 'Salary', '0');
 
 const category1 = new Category('0', new Date(), 'Income', '#ffffff', 0);
-category1.addTransaction(transaction4);
 const category2 = new Category('1', new Date(), 'Transportation', '#ef4444', 500);
-category2.addTransaction(transaction1);
 const category3 = new Category('2', new Date(), 'Entertainment', '#f97316', 200);
-category3.addTransaction(transaction2);
-category3.addTransaction(transaction3);
 const sampleUserData = new UserData();
 sampleUserData.setCategories([category1, category2, category3]);
+sampleUserData.setTransactions([transaction1, transaction2, transaction3, transaction4]);
 
 export default function App() {
   const [userData, setUserData] = useState<UserData>(sampleUserData)
-  const [newCategories, setNewCategories] = useState<Category[]>()
+  const [categories, setCategories] = useState<Category[]>(userData.getCategories())
+  const [transactions, setTransactions] = useState<Transaction[]>([transaction1, transaction2, transaction3, transaction4])
 
   // Load data from localStorage on mount
   // useEffect(() => {
@@ -54,12 +52,13 @@ export default function App() {
   // }, [transactions])
 
   useEffect(() => {
-    if (newCategories) {
+    if (categories) {
       const updatedUserData = new UserData()
-      updatedUserData.setCategories(newCategories)
+      updatedUserData.setCategories(categories)
+      updatedUserData.setTransactions(transactions)
       setUserData(updatedUserData)
     }
-  }, [newCategories])
+  }, [categories, transactions])
 
   return (
     <div className="min-h-screen bg-background">
@@ -79,13 +78,13 @@ export default function App() {
               <BarChart3 className="w-4 h-4" />
               Dashboard
             </TabsTrigger>
-            <TabsTrigger value="budgets" className="flex items-center gap-2">
+            <TabsTrigger value="categories" className="flex items-center gap-2">
               <PlusCircle className="w-4 h-4" />
-              Budgets
+              Categories
             </TabsTrigger>
-            <TabsTrigger value="expenses" className="flex items-center gap-2">
+            <TabsTrigger value="transactions" className="flex items-center gap-2">
               <DollarSign className="w-4 h-4" />
-              Expenses
+              Transactions
             </TabsTrigger>
             <TabsTrigger value="analytics" className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4" />
@@ -99,21 +98,19 @@ export default function App() {
             />
           </TabsContent>
 
-          <TabsContent value="budgets">
+          <TabsContent value="categories">
             <BudgetManager 
-              categories={userData.getCategories()}
-              onUpdateBudgets={setNewCategories}
+              userData={userData}
+              onUpdateBudgets={setCategories}
             />
           </TabsContent>
 
-          {/* <TabsContent value="expenses">
+          <TabsContent value="transactions">
             <ExpenseTracker 
-              transactions={transactions}
-              budgets={budgets}
+              userData={userData}
               onUpdateTransactions={setTransactions}
-              onUpdateBudgets={setBudgets}
             />
-          </TabsContent> */}
+          </TabsContent>
 
           {/* <TabsContent value="analytics">
             <BudgetAnalytics 
@@ -124,7 +121,7 @@ export default function App() {
         </Tabs>
 
         {/* Getting Started Guide */}
-        {userData.getCategories().length === 0 && (
+        {userData.getCategories().length === 1 && (
           <Card className="p-8 mt-8 text-center">
             <h3 className="mb-4">Welcome to your Budget Tracker!</h3>
             <p className="text-muted-foreground mb-6">

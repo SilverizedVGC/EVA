@@ -6,14 +6,15 @@ import { Label } from "./ui/label"
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog"
 import { Plus, Edit, Trash2 } from "lucide-react"
+import UserData from "./classes/UserData"
 import Category from "./classes/Category"
 
 interface BudgetManagerProps {
-  categories: Category[]
+  userData: UserData
   onUpdateBudgets: (categories: Category[]) => void
 }
 
-export function BudgetManager({ categories, onUpdateBudgets }: BudgetManagerProps) {
+export function BudgetManager({ userData, onUpdateBudgets }: BudgetManagerProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingBudget, setEditingBudget] = useState<Category | null>(null)
   const [name, setName] = useState("")
@@ -48,7 +49,7 @@ export function BudgetManager({ categories, onUpdateBudgets }: BudgetManagerProp
 
     if (editingBudget) {
       // Update existing category
-      const updatedCategories = categories.map(category =>
+      const updatedCategories = userData.getCategories().map(category =>
         category.getId() === editingBudget.getId()
           ? new Category(
               category.getId(),
@@ -69,7 +70,7 @@ export function BudgetManager({ categories, onUpdateBudgets }: BudgetManagerProp
         color,
         budget
       )
-      onUpdateBudgets([...categories, newCategory])
+      onUpdateBudgets([...userData.getCategories(), newCategory])
     }
 
     // Reset form
@@ -89,7 +90,7 @@ export function BudgetManager({ categories, onUpdateBudgets }: BudgetManagerProp
   }
 
   const handleDelete = (id: string) => {
-    const updatedBudgets = categories.filter(category => category.getId() !== id)
+    const updatedBudgets = userData.getCategories().filter(category => category.getId() !== id)
     onUpdateBudgets(updatedBudgets)
   }
 
@@ -179,16 +180,16 @@ export function BudgetManager({ categories, onUpdateBudgets }: BudgetManagerProp
       </div>
 
       <div className="grid gap-4">
-        {categories.length === 0 ? (
+        {userData.getCategories().length === 0 ? (
           <Card className="p-8 text-center text-muted-foreground">
             <p>No budget categories yet.</p>
             <p>Add your first category to get started!</p>
           </Card>
         ) : (
-          categories.map((category) => {
+          userData.getCategories().map((category) => {
             if (category.getId() === "0") return null // Skip default category
-            const percentage = category.calculateUsage()
-            const remaining = category.calculateRemainBudget()
+            const percentage = userData.calculateUsage(category.getId())
+            const remaining = userData.calculateRemainingBudget(category.getId())
             
             return (
               <Card key={category.getId()} className="p-4">
@@ -201,7 +202,7 @@ export function BudgetManager({ categories, onUpdateBudgets }: BudgetManagerProp
                     <div>
                       <h4>{category.getName()}</h4>
                       <p className="text-sm text-muted-foreground">
-                        {formatCurrency(category.calculateExpense())} of {formatCurrency(category.getBudget())} spent
+                        {formatCurrency(userData.calculateExpense(category.getId()))} of {formatCurrency(category.getBudget())} spent
                       </p>
                     </div>
                   </div>

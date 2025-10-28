@@ -4,7 +4,7 @@ export default class Transaction {
     private amount: number; // final
     private type: 'expense' | 'income'; // final
     private description: string; // changeable
-    private category: string; // changeable
+    private categoryId: string; // changeable
 
     constructor(
         id: string,
@@ -12,14 +12,14 @@ export default class Transaction {
         amount: number,
         type: 'expense' | 'income',
         description: string,
-        category: string
+        categoryId: string
     ) {
         this.id = id;
         this.date = date;
         this.amount = amount;
         this.type = type;
         this.description = description;
-        this.category = category;
+        this.categoryId = categoryId;
     }
 
     getId(): string {
@@ -46,11 +46,11 @@ export default class Transaction {
         this.description = description;
     }
 
-    getCategory(): string {
-        return this.category;
+    getCategoryId(): string {
+        return this.categoryId;
     }
 
-    setCategory(category: string): void {
-        this.category = category;
+    setCategoryId(category: string): void {
+        this.categoryId = category;
     }
 }

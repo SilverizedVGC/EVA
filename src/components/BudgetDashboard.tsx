@@ -11,7 +11,7 @@ interface DashboardProps {
 export function BudgetDashboard({ userData }: DashboardProps) {
   const totalIncome = userData.calculateTotalIncome()
   const totalExpenses = userData.calculateTotalExpense()
-  const remainingBudget = userData.calculateTotalRemainBudget()
+  const remainingBudget = userData.calculateTotalRemainingBudget()
   const savingsRate = userData.calculateSavingRate()
 
   const formatCurrency = (amount: number) => {
@@ -75,7 +75,8 @@ export function BudgetDashboard({ userData }: DashboardProps) {
         <h3 className="mb-4">Budget Categories</h3>
         <div className="space-y-4">
           {userData.getCategories().map((category) => {
-            const percentage = category.calculateUsage()
+            if (category.getId() === "0") return null // Skip default category
+            const percentage = userData.calculateUsage(category.getId())
             const isOverBudget = percentage > 100
             
             return (
@@ -93,7 +94,7 @@ export function BudgetDashboard({ userData }: DashboardProps) {
                   </div>
                   <div className="text-right">
                     <span className="text-sm">
-                      {formatCurrency(category.calculateExpense())} / {formatCurrency(category.getBudget())}
+                      {formatCurrency(userData.calculateExpense(category.getId()))} / {formatCurrency(category.getBudget())}
                     </span>
                   </div>
                 </div>
