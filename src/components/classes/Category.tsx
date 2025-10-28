@@ -1,6 +1,6 @@
-import { Transaction } from "./Transaction";
+import Transaction from "./Transaction";
 
-export class Category {
+export default class Category {
     private id: string; // primary key
     private date: Date; // final
     private name: string; // changeable

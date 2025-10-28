@@ -3,33 +3,35 @@ import { Card } from "./ui/card"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
+import { RadioGroup, RadioGroupItem } from "./ui/radio-group"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog"
 import { Plus, Edit, Trash2 } from "lucide-react"
-
-interface BudgetItem {
-  id: string
-  category: string
-  budgeted: number
-  spent: number
-  color: string
-}
+import Category from "./classes/Category"
 
 interface BudgetManagerProps {
-  budgets: BudgetItem[]
-  onUpdateBudgets: (budgets: BudgetItem[]) => void
+  categories: Category[]
+  onUpdateBudgets: (categories: Category[]) => void
 }
 
-const defaultColors = [
-  "#ef4444", "#f97316", "#eab308", "#22c55e", 
-  "#06b6d4", "#3b82f6", "#8b5cf6", "#ec4899",
-  "#f59e0b", "#10b981"
-]
-
-export function BudgetManager({ budgets, onUpdateBudgets }: BudgetManagerProps) {
+export function BudgetManager({ categories, onUpdateBudgets }: BudgetManagerProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  const [editingBudget, setEditingBudget] = useState<BudgetItem | null>(null)
-  const [category, setCategory] = useState("")
-  const [amount, setAmount] = useState("")
+  const [editingBudget, setEditingBudget] = useState<Category | null>(null)
+  const [name, setName] = useState("")
+  const [color, setColor] = useState("")
+  const [budget, setBudget] = useState(0)
+
+  const colorOptions = [
+    { name: "Red", label: "#ef4444" },
+    { name: "Orange", label: "#f97316" },
+    { name: "Yellow", label: "#eab308" },
+    { name: "Green", label: "#22c55e" },
+    { name: "Teal", label: "#06b6d4" },
+    { name: "Blue", label: "#3b82f6" },
+    { name: "Purple", label: "#8b5cf6" },
+    { name: "Pink", label: "#ec4899" },
+    { name: "Amber", label: "#f59e0b" },
+    { name: "Emerald", label: "#10b981" }
+  ]
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -41,54 +43,60 @@ export function BudgetManager({ budgets, onUpdateBudgets }: BudgetManagerProps) 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!category || !amount) return
-
-    const budgetAmount = parseFloat(amount)
-    if (isNaN(budgetAmount) || budgetAmount <= 0) return
+    if (!name || !color || !budget) return
+    if (budget <= 0) return
 
     if (editingBudget) {
-      // Update existing budget
-      const updatedBudgets = budgets.map(budget =>
-        budget.id === editingBudget.id
-          ? { ...budget, category, budgeted: budgetAmount }
-          : budget
+      // Update existing category
+      const updatedCategories = categories.map(category =>
+        category.getId() === editingBudget.getId()
+          ? new Category(
+              category.getId(),
+              category.getDate(),
+              name,
+              color,
+              budget
+            )
+          : category
       )
-      onUpdateBudgets(updatedBudgets)
+      onUpdateBudgets(updatedCategories)
     } else {
-      // Add new budget
-      const colorIndex = budgets.length % defaultColors.length
-      const newBudget: BudgetItem = {
-        id: Date.now().toString(),
-        category,
-        budgeted: budgetAmount,
-        spent: 0,
-        color: defaultColors[colorIndex]
-      }
-      onUpdateBudgets([...budgets, newBudget])
+      // Add new category
+      const newCategory = new Category(
+        Date.now().toString(),
+        new Date(),
+        name,
+        color,
+        budget
+      )
+      onUpdateBudgets([...categories, newCategory])
     }
 
     // Reset form
-    setCategory("")
-    setAmount("")
+    setName("")
+    setColor("")
+    setBudget(0)
     setEditingBudget(null)
     setIsDialogOpen(false)
   }
 
-  const handleEdit = (budget: BudgetItem) => {
-    setEditingBudget(budget)
-    setCategory(budget.category)
-    setAmount(budget.budgeted.toString())
+  const handleEdit = ([category, name, color, budget]: [category: Category, name: string, color: string, budget: number]) => {
+    setEditingBudget(category)
+    setName(name)
+    setColor(color)
+    setBudget(budget)
     setIsDialogOpen(true)
   }
 
-  const handleDelete = (budgetId: string) => {
-    const updatedBudgets = budgets.filter(budget => budget.id !== budgetId)
+  const handleDelete = (id: string) => {
+    const updatedBudgets = categories.filter(category => category.getId() !== id)
     onUpdateBudgets(updatedBudgets)
   }
 
   const resetForm = () => {
-    setCategory("")
-    setAmount("")
+    setName("")
+    setColor("")
+    setBudget(0)
     setEditingBudget(null)
   }
 
@@ -116,12 +124,30 @@ export function BudgetManager({ budgets, onUpdateBudgets }: BudgetManagerProps) 
               <div>
                 <Label htmlFor="category">Category Name</Label>
                 <Input
-                  id="category"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
+                  id="name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
                   placeholder="e.g., Groceries, Entertainment"
                   required
                 />
+              </div>
+              <div>
+                <RadioGroup defaultValue={color}>
+                  {colorOptions.map((option, index) => (
+                    <div key={index} className="flex items-center space-x-2 mb-2">
+                      <RadioGroupItem
+                        value={option.label}
+                        id={option.name}
+                        checked={color === option.label}
+                        onClick={() => setColor(option.label)}
+                        className="border-2 border-gray-300 rounded-full w-6 h-6 p-1"
+                        style={{ backgroundColor: option.label }}
+                      >
+                      </RadioGroupItem>
+                      <Label htmlFor={option.name}>{option.name}</Label>
+                    </div>
+                  ))}
+                </RadioGroup>
               </div>
               <div>
                 <Label htmlFor="amount">Monthly Budget</Label>
@@ -129,8 +155,8 @@ export function BudgetManager({ budgets, onUpdateBudgets }: BudgetManagerProps) 
                   id="amount"
                   type="number"
                   step="0.01"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  value={budget}
+                  onChange={(e) => setBudget(Number(e.target.value))}
                   placeholder="0.00"
                   required
                 />
@@ -153,28 +179,29 @@ export function BudgetManager({ budgets, onUpdateBudgets }: BudgetManagerProps) 
       </div>
 
       <div className="grid gap-4">
-        {budgets.length === 0 ? (
+        {categories.length === 0 ? (
           <Card className="p-8 text-center text-muted-foreground">
             <p>No budget categories yet.</p>
             <p>Add your first category to get started!</p>
           </Card>
         ) : (
-          budgets.map((budget) => {
-            const percentage = budget.budgeted > 0 ? (budget.spent / budget.budgeted) * 100 : 0
-            const remaining = budget.budgeted - budget.spent
+          categories.map((category) => {
+            if (category.getId() === "0") return null // Skip default category
+            const percentage = category.calculateUsage()
+            const remaining = category.calculateRemainBudget()
             
             return (
-              <Card key={budget.id} className="p-4">
+              <Card key={category.getId()} className="p-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div
                       className="w-4 h-4 rounded-full"
-                      style={{ backgroundColor: budget.color }}
+                      style={{ backgroundColor: category.getColor() }}
                     />
                     <div>
-                      <h4>{budget.category}</h4>
+                      <h4>{category.getName()}</h4>
                       <p className="text-sm text-muted-foreground">
-                        {formatCurrency(budget.spent)} of {formatCurrency(budget.budgeted)} spent
+                        {formatCurrency(category.calculateExpense())} of {formatCurrency(category.getBudget())} spent
                       </p>
                     </div>
                   </div>
@@ -191,14 +218,14 @@ export function BudgetManager({ budgets, onUpdateBudgets }: BudgetManagerProps) 
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleEdit(budget)}
+                        onClick={() => handleEdit([category, category.getName(), category.getColor(), category.getBudget()])}
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDelete(budget.id)}
+                        onClick={() => handleDelete(category.getId())}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>

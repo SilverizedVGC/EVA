@@ -7,81 +7,59 @@ import { BudgetManager } from "@/components/BudgetManager"
 import { ExpenseTracker } from "@/components/ExpenseTracker"
 import { BudgetAnalytics } from "@/components/BudgetAnalytics"
 import { BarChart3, PlusCircle, DollarSign, TrendingUp } from "lucide-react"
+import Transaction from "@/components/classes/Transaction"
+import Category from "@/components/classes/Category"
+import UserData from "@/components/classes/UserData"
 
-interface Transaction {
-  id: string
-  description: string
-  amount: number
-  category: string
-  date: string
-  type: 'expense' | 'income'
-}
+const transaction1 = new Transaction('1', new Date('2024-12-15'), 85.50, 'expense', 'Chevron', 'Transportation');
+const transaction2 = new Transaction('2', new Date('2024-12-14'), 40.00, 'expense', 'Game', 'Entertainment');
+const transaction3 = new Transaction('2', new Date('2024-12-14'), 40.00, 'expense', 'Movie Theater', 'Entertainment');
+const transaction4 = new Transaction('3', new Date('2024-12-13'), 1200.00, 'income', 'Salary', 'Income');
 
-interface BudgetItem {
-  id: string
-  category: string
-  budgeted: number
-  spent: number
-  color: string
-}
-
-// Sample data for demonstration
-const sampleBudgets: BudgetItem[] = [
-  { id: '1', category: 'Transportation', budgeted: 500, spent: 320, color: '#ef4444' },
-  { id: '2', category: 'Entertainment', budgeted: 200, spent: 150, color: '#f97316' },
-  { id: '3', category: 'Rent', budgeted: 1350, spent: 180, color: '#eab308' },
-  { id: '4', category: 'Fast Food', budgeted: 300, spent: 275, color: '#22c55e' },
-  { id: '5', category: 'Groceries', budgeted: 400, spent: 225, color: '#06b6d4' },
-]
-
-const sampleTransactions: Transaction[] = [
-  { id: '1', description: 'Chevron', amount: 85.50, category: 'Transportation', date: '2024-12-15', type: 'expense' },
-  { id: '2', description: 'Safeway', amount: 45.00, category: 'Groceries', date: '2024-12-14', type: 'expense' },
-  { id: '3', description: 'Monthly Salary', amount: 3500.00, category: 'Salary', date: '2024-12-01', type: 'income' },
-  { id: '4', description: 'Five Guys', amount: 25.00, category: 'Fast Food', date: '2024-12-13', type: 'expense' },
-  { id: '5', description: 'Safeway', amount: 120.00, category: 'Groceries', date: '2024-12-3', type: 'expense' },
-  { id: '6', description: 'Ticketmaster', amount: 167.30, category: 'Entertainment', date: '2024-12-11', type: 'expense' },
-  { id: '7', description: 'Safeway', amount: 92.75, category: 'Groceries', date: '2024-12-10', type: 'expense' },
-  { id: '8', description: 'Chipotle', amount: 38.20, category: 'Fast Food', date: '2024-12-09', type: 'expense' },
-  { id: '9', description: 'Rent', amount: 1350.00, category: 'Rent', date: '2024-12-08', type: 'expense' },
-  { id: '10', description: 'In n out', amount: 13.56, category: 'Fast Food', date: '2024-12-07', type: 'expense' }
-]
+const category1 = new Category('0', new Date(), 'Income', '#ffffff', 0);
+category1.addTransaction(transaction4);
+const category2 = new Category('1', new Date(), 'Transportation', '#ef4444', 500);
+category2.addTransaction(transaction1);
+const category3 = new Category('2', new Date(), 'Entertainment', '#f97316', 200);
+category3.addTransaction(transaction2);
+category3.addTransaction(transaction3);
+const sampleUserData = new UserData();
+sampleUserData.setCategories([category1, category2, category3]);
 
 export default function App() {
-  const [budgets, setBudgets] = useState<BudgetItem[]>(sampleBudgets)
-  const [transactions, setTransactions] = useState<Transaction[]>(sampleTransactions)
-
-  // Calculate totals
-  const totalIncome = transactions
-    .filter(t => t.type === 'income')
-    .reduce((sum, t) => sum + t.amount, 0)
-
-  const totalExpenses = transactions
-    .filter(t => t.type === 'expense')
-    .reduce((sum, t) => sum + t.amount, 0)
+  const [userData, setUserData] = useState<UserData>(sampleUserData)
+  const [newCategories, setNewCategories] = useState<Category[]>()
 
   // Load data from localStorage on mount
-  useEffect(() => {
-    const savedBudgets = localStorage.getItem('budgets')
-    const savedTransactions = localStorage.getItem('transactions')
+  // useEffect(() => {
+  //   const savedBudgets = localStorage.getItem('budgets')
+  //   const savedTransactions = localStorage.getItem('transactions')
     
-    if (savedBudgets) {
-      setBudgets(JSON.parse(savedBudgets))
-    }
+  //   if (savedBudgets) {
+  //     setBudgets(JSON.parse(savedBudgets))
+  //   }
     
-    if (savedTransactions) {
-      setTransactions(JSON.parse(savedTransactions))
-    }
-  }, [])
+  //   if (savedTransactions) {
+  //     setTransactions(JSON.parse(savedTransactions))
+  //   }
+  // }, [])
 
   // Save to localStorage when data changes
-  useEffect(() => {
-    localStorage.setItem('budgets', JSON.stringify(budgets))
-  }, [budgets])
+  // useEffect(() => {
+  //   localStorage.setItem('budgets', JSON.stringify(budgets))
+  // }, [budgets])
+
+  // useEffect(() => {
+  //   localStorage.setItem('transactions', JSON.stringify(transactions))
+  // }, [transactions])
 
   useEffect(() => {
-    localStorage.setItem('transactions', JSON.stringify(transactions))
-  }, [transactions])
+    if (newCategories) {
+      const updatedUserData = new UserData()
+      updatedUserData.setCategories(newCategories)
+      setUserData(updatedUserData)
+    }
+  }, [newCategories])
 
   return (
     <div className="min-h-screen bg-background">
@@ -117,38 +95,36 @@ export default function App() {
 
           <TabsContent value="dashboard">
             <BudgetDashboard 
-              budgets={budgets}
-              totalIncome={totalIncome}
-              totalExpenses={totalExpenses}
+              userData={userData}
             />
           </TabsContent>
 
           <TabsContent value="budgets">
             <BudgetManager 
-              budgets={budgets}
-              onUpdateBudgets={setBudgets}
+              categories={userData.getCategories()}
+              onUpdateBudgets={setNewCategories}
             />
           </TabsContent>
 
-          <TabsContent value="expenses">
+          {/* <TabsContent value="expenses">
             <ExpenseTracker 
               transactions={transactions}
               budgets={budgets}
               onUpdateTransactions={setTransactions}
               onUpdateBudgets={setBudgets}
             />
-          </TabsContent>
+          </TabsContent> */}
 
-          <TabsContent value="analytics">
+          {/* <TabsContent value="analytics">
             <BudgetAnalytics 
               transactions={transactions}
               budgets={budgets}
             />
-          </TabsContent>
+          </TabsContent> */}
         </Tabs>
 
         {/* Getting Started Guide */}
-        {budgets.length === 0 && transactions.length === 0 && (
+        {userData.getCategories().length === 0 && (
           <Card className="p-8 mt-8 text-center">
             <h3 className="mb-4">Welcome to your Budget Tracker!</h3>
             <p className="text-muted-foreground mb-6">

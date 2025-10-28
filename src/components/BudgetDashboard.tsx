@@ -2,26 +2,17 @@ import { Card } from "./ui/card"
 import { Progress } from "./ui/progress"
 import { Badge } from "./ui/badge"
 import { TrendingUp, TrendingDown, DollarSign, Target } from "lucide-react"
-
-interface BudgetItem {
-  id: string
-  category: string
-  budgeted: number
-  spent: number
-  color: string
-}
+import UserData from "./classes/UserData"
 
 interface DashboardProps {
-  budgets: BudgetItem[]
-  totalIncome: number
-  totalExpenses: number
+  userData: UserData
 }
 
-export function BudgetDashboard({ budgets, totalIncome, totalExpenses }: DashboardProps) {
-  const totalBudgeted = budgets.reduce((sum, budget) => sum + budget.budgeted, 0)
-  const totalSpent = budgets.reduce((sum, budget) => sum + budget.spent, 0)
-  const remainingBudget = totalBudgeted - totalSpent
-  const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpenses) / totalIncome) * 100 : 0
+export function BudgetDashboard({ userData }: DashboardProps) {
+  const totalIncome = userData.calculateTotalIncome()
+  const totalExpenses = userData.calculateTotalExpense()
+  const remainingBudget = userData.calculateTotalRemainBudget()
+  const savingsRate = userData.calculateSavingRate()
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -83,26 +74,26 @@ export function BudgetDashboard({ budgets, totalIncome, totalExpenses }: Dashboa
       <Card className="p-6">
         <h3 className="mb-4">Budget Categories</h3>
         <div className="space-y-4">
-          {budgets.map((budget) => {
-            const percentage = budget.budgeted > 0 ? (budget.spent / budget.budgeted) * 100 : 0
+          {userData.getCategories().map((category) => {
+            const percentage = category.calculateUsage()
             const isOverBudget = percentage > 100
             
             return (
-              <div key={budget.id} className="space-y-2">
+              <div key={category.getId()} className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div 
                       className="w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: budget.color }}
+                      style={{ backgroundColor: category.getColor() }}
                     />
-                    <span>{budget.category}</span>
+                    <span>{category.getName()}</span>
                     {isOverBudget && (
                       <Badge variant="destructive">Over Budget</Badge>
                     )}
                   </div>
                   <div className="text-right">
                     <span className="text-sm">
-                      {formatCurrency(budget.spent)} / {formatCurrency(budget.budgeted)}
+                      {formatCurrency(category.calculateExpense())} / {formatCurrency(category.getBudget())}
                     </span>
                   </div>
                 </div>

@@ -1,6 +1,6 @@
-import { Category } from "./Category";
+import Category from "./Category";
 
-export class UserData {
+export default class UserData {
     private categories: Category[];
 
     constructor() {

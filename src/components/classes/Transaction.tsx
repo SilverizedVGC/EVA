@@ -1,4 +1,4 @@
-export class Transaction {
+export default class Transaction {
     private id: string; // primary key
     private date: Date; // final
     private amount: number; // final
