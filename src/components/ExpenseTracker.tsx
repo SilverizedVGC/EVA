@@ -84,7 +84,7 @@ export function ExpenseTracker({ userData, onUpdateTransactions }: ExpenseTracke
 
   const getAvailableCategories = () => {
     if (type === 'expense') {
-      return userData.getCategories().map(category => category.getName())
+      return userData.getCategories().filter(category => category.getId() !== "0")
     } else {
       return []
     }
@@ -211,7 +211,7 @@ export function ExpenseTracker({ userData, onUpdateTransactions }: ExpenseTracke
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="type">Type</Label>
+                  <Label htmlFor="type" className="pb-2">Type</Label>
                   <Select value={type} onValueChange={(value: 'expense' | 'income') => {
                     setType(value)
                     setCategoryId("") // Reset category when type changes
@@ -226,7 +226,7 @@ export function ExpenseTracker({ userData, onUpdateTransactions }: ExpenseTracke
                   </Select>
                 </div>
                 <div>
-                  <Label htmlFor="amount">Amount</Label>
+                  <Label htmlFor="amount" className="pb-2">Amount</Label>
                   <Input
                     id="amount"
                     type="number"
@@ -240,7 +240,7 @@ export function ExpenseTracker({ userData, onUpdateTransactions }: ExpenseTracke
               </div>
               
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="description" className="pb-2">Description</Label>
                 <Input
                   id="description"
                   value={description}
@@ -251,15 +251,16 @@ export function ExpenseTracker({ userData, onUpdateTransactions }: ExpenseTracke
               </div>
 
               <div>
-                <Label htmlFor="category">Category</Label>
-                <Select value={categoryId} onValueChange={setCategoryId} required>
+                <Label htmlFor="category" className="pb-2">Category</Label>
+                <Select value={categoryId} onValueChange={setCategoryId} disabled={type === 'income'} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {getAvailableCategories().map((cat) => (
-                      <SelectItem key={cat} value={cat}>
-                        {cat}
+                    {getAvailableCategories().map((category) => (
+                      <SelectItem key={category.getId()} value={category.getId()}>
+                        <div className="border-2 border-gray-300 rounded-full w-6 h-6 p-1" style={{ backgroundColor: category.getColor() }}></div>
+                        {category.getName()}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -267,7 +268,7 @@ export function ExpenseTracker({ userData, onUpdateTransactions }: ExpenseTracke
               </div>
 
               <div>
-                <Label htmlFor="date">Date</Label>
+                <Label htmlFor="date" className="pb-2">Date</Label>
                 <Input
                   id="date"
                   type="date"

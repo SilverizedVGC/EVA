@@ -3,6 +3,7 @@ import { Card } from "./ui/card"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog"
 import { Plus, Edit, Trash2 } from "lucide-react"
@@ -11,15 +12,19 @@ import Category from "./classes/Category"
 
 interface BudgetManagerProps {
   userData: UserData
-  onUpdateBudgets: (categories: Category[]) => void
+  onUpdateCategories: (categories: Category[]) => void
+  onDeleteCategory?: (id: string) => void
 }
 
-export function BudgetManager({ userData, onUpdateBudgets }: BudgetManagerProps) {
+export function BudgetManager({ userData, onUpdateCategories, onDeleteCategory }: BudgetManagerProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  //const [dialogMode, setDialogMode] = useState<"edit" | "delete">("edit")
   const [editingBudget, setEditingBudget] = useState<Category | null>(null)
   const [name, setName] = useState("")
   const [color, setColor] = useState("")
-  const [budget, setBudget] = useState(0)
+  const [budget, setBudget] = useState<number | null>(null)
+  const [type, setType] = useState<'name' | 'date'>('name')
+  const [formError, setFormError] = useState<string | null>(null)
 
   const colorOptions = [
     { name: "Red", label: "#ef4444" },
@@ -43,9 +48,14 @@ export function BudgetManager({ userData, onUpdateBudgets }: BudgetManagerProps)
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!name) setFormError("Please enter a category name")
+    else if (!color) setFormError("Please select a color")
+    else if (budget == null) setFormError("Please enter a budget")
+    else if (budget <= 0) setFormError("Please enter a budget that is greater than zero")
+    else setFormError(null)
     
-    if (!name || !color || !budget) return
-    if (budget <= 0) return
+    if (!name || !color || !budget || budget <= 0) return
 
     if (editingBudget) {
       // Update existing category
@@ -60,7 +70,7 @@ export function BudgetManager({ userData, onUpdateBudgets }: BudgetManagerProps)
             )
           : category
       )
-      onUpdateBudgets(updatedCategories)
+      onUpdateCategories(updatedCategories)
     } else {
       // Add new category
       const newCategory = new Category(
@@ -70,7 +80,7 @@ export function BudgetManager({ userData, onUpdateBudgets }: BudgetManagerProps)
         color,
         budget
       )
-      onUpdateBudgets([...userData.getCategories(), newCategory])
+      onUpdateCategories([...userData.getCategories(), newCategory])
     }
 
     // Reset form
@@ -91,7 +101,8 @@ export function BudgetManager({ userData, onUpdateBudgets }: BudgetManagerProps)
 
   const handleDelete = (id: string) => {
     const updatedBudgets = userData.getCategories().filter(category => category.getId() !== id)
-    onUpdateBudgets(updatedBudgets)
+    onUpdateCategories(updatedBudgets)
+    if (onDeleteCategory) onDeleteCategory(id)
   }
 
   const resetForm = () => {
@@ -99,6 +110,11 @@ export function BudgetManager({ userData, onUpdateBudgets }: BudgetManagerProps)
     setColor("")
     setBudget(0)
     setEditingBudget(null)
+  }
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value)
+    setBudget(isNaN(value) ? null : value)
   }
 
   return (
@@ -123,7 +139,7 @@ export function BudgetManager({ userData, onUpdateBudgets }: BudgetManagerProps)
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="category">Category Name</Label>
+                <Label htmlFor="category" className="pb-2">Category Name</Label>
                 <Input
                   id="name"
                   value={name}
@@ -133,7 +149,8 @@ export function BudgetManager({ userData, onUpdateBudgets }: BudgetManagerProps)
                 />
               </div>
               <div>
-                <RadioGroup defaultValue={color}>
+                <Label className="pb-2">Category Color</Label>
+                <RadioGroup defaultValue={color} className="grid grid-cols-2">
                   {colorOptions.map((option, index) => (
                     <div key={index} className="flex items-center space-x-2 mb-2">
                       <RadioGroupItem
@@ -151,16 +168,19 @@ export function BudgetManager({ userData, onUpdateBudgets }: BudgetManagerProps)
                 </RadioGroup>
               </div>
               <div>
-                <Label htmlFor="amount">Monthly Budget</Label>
+                <Label htmlFor="amount" className="pb-2">Monthly Budget</Label>
                 <Input
                   id="amount"
                   type="number"
                   step="0.01"
-                  value={budget}
-                  onChange={(e) => setBudget(Number(e.target.value))}
+                  value={budget ?? ""}
+                  onChange={handleAmountChange}
                   placeholder="0.00"
                   required
                 />
+              </div>
+              <div className="text-red-600">
+                {formError}
               </div>
               <div className="flex gap-2">
                 <Button type="submit" className="flex-1">
@@ -177,6 +197,29 @@ export function BudgetManager({ userData, onUpdateBudgets }: BudgetManagerProps)
             </form>
           </DialogContent>
         </Dialog>
+      </div>
+
+      <div className="grid gap-4">
+        <div className="flex items-center justify-between gap-4">
+          <Input
+            type="search"
+            placeholder="Search categories..."
+          />
+          <Select value={type} onValueChange={(value: 'name' | 'date') => {
+            setType(value)
+          }}>
+            <SelectTrigger className="w-[30%]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="name">Sort by Name</SelectItem>
+              <SelectItem value="date">Sort by Date</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="text-sm text-muted-foreground">
+          {userData.getCategories().length - 1} {userData.getCategories().length === 1 ? "category" : "categories"} total
+        </div>
       </div>
 
       <div className="grid gap-4">

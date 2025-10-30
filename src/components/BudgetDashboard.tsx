@@ -80,7 +80,7 @@ export function BudgetDashboard({ userData }: DashboardProps) {
             const isOverBudget = percentage > 100
             
             return (
-              <div key={category.getId()} className="space-y-2">
+              <div key={category.getId()} className="space-y-2 w-full">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div 
@@ -99,8 +99,8 @@ export function BudgetDashboard({ userData }: DashboardProps) {
                   </div>
                 </div>
                 <Progress 
-                  value={Math.min(percentage, 100)} 
-                  className="h-2"
+                  value={Math.min(percentage, 100)}
+                  className="h-4"
                 />
                 <div className="text-right text-xs text-muted-foreground">
                   {percentage.toFixed(1)}% used

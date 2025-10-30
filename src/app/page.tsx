@@ -51,6 +51,11 @@ export default function App() {
   //   localStorage.setItem('transactions', JSON.stringify(transactions))
   // }, [transactions])
 
+  const handleDeleteCategory = (id: string) => {
+    const updatedTransactions = transactions.filter(transaction => transaction.getCategoryId() !== id)
+    setTransactions(updatedTransactions)
+  }
+
   useEffect(() => {
     if (categories) {
       const updatedUserData = new UserData()
@@ -73,7 +78,7 @@ export default function App() {
 
         {/* Main Content */}
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-8">
+          <TabsList className="grid w-full grid-cols-4 mb-8 bg-foreground/10">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <BarChart3 className="w-4 h-4" />
               Dashboard
@@ -101,7 +106,8 @@ export default function App() {
           <TabsContent value="categories">
             <BudgetManager 
               userData={userData}
-              onUpdateBudgets={setCategories}
+              onUpdateCategories={setCategories}
+              onDeleteCategory={(id: string) => handleDeleteCategory(id)}
             />
           </TabsContent>
 
