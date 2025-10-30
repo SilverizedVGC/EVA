@@ -118,12 +118,11 @@ export default function App() {
             />
           </TabsContent>
 
-          {/* <TabsContent value="analytics">
+          {<TabsContent value="analytics">
             <BudgetAnalytics 
-              transactions={transactions}
-              budgets={budgets}
+              userData={userData}
             />
-          </TabsContent> */}
+          </TabsContent>}
         </Tabs>
 
         {/* Getting Started Guide */}
