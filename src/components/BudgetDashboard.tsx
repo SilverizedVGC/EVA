@@ -1,18 +1,19 @@
 import { Card } from "./ui/card"
 import { Progress } from "./ui/progress"
 import { Badge } from "./ui/badge"
-import { TrendingUp, TrendingDown, DollarSign, Target } from "lucide-react"
+import { TrendingUp, TrendingDown, DollarSign, Target, BarChart3 } from "lucide-react"
 import UserData from "./classes/UserData"
 
 interface DashboardProps {
   userData: UserData
+  monthYear: string
 }
 
-export function BudgetDashboard({ userData }: DashboardProps) {
-  const totalIncome = userData.calculateTotalIncome()
-  const totalExpenses = userData.calculateTotalExpense()
-  const remainingBudget = userData.calculateTotalRemainingBudget()
-  const savingsRate = userData.calculateSavingRate()
+export function BudgetDashboard({ userData, monthYear }: DashboardProps) {
+  const totalIncome = userData.calculateTotalIncome(monthYear)
+  const totalExpenses = userData.calculateTotalExpense(monthYear)
+  const remainingBudget = userData.calculateTotalRemainingBudget(monthYear)
+  const savingsRate = userData.calculateSavingRate(monthYear)
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -74,9 +75,17 @@ export function BudgetDashboard({ userData }: DashboardProps) {
       <Card className="p-6">
         <h3 className="mb-4">Budget Categories</h3>
         <div className="space-y-4">
-          {userData.getCategories().map((category) => {
+          {userData.getCategories().length - 1 === 0 ? (
+            <div className="text-center text-muted-foreground py-8">
+              <BarChart3 className="w-12 h-12 mx-auto mb-2 opacity-50" />
+              <p>No categories yet.</p>
+              <p>Add your first categories to get started!</p>
+            </div>
+          ) : (
+          userData.getCategories().map((category) => {
             if (category.getId() === "0") return null // Skip default category
-            const percentage = userData.calculateUsage(category.getId())
+            const { month, year } = userData.parseMonthYear(monthYear);
+            const percentage = userData.calculateUsage(category.getId(), month, year);
             const isOverBudget = percentage > 100
             
             return (
@@ -94,7 +103,7 @@ export function BudgetDashboard({ userData }: DashboardProps) {
                   </div>
                   <div className="text-right">
                     <span className="text-sm">
-                      {formatCurrency(userData.calculateExpense(category.getId()))} / {formatCurrency(category.getBudget())}
+                      {formatCurrency(userData.calculateExpense(category.getId(), month, year))} / {formatCurrency(category.getBudget())}
                     </span>
                   </div>
                 </div>
@@ -107,7 +116,7 @@ export function BudgetDashboard({ userData }: DashboardProps) {
                 </div>
               </div>
             )
-          })}
+          }))}
         </div>
       </Card>
     </div>

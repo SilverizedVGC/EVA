@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card } from "@/components/ui/card"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { BudgetDashboard } from "@/components/BudgetDashboard"
 import { BudgetManager } from "@/components/BudgetManager"
 import { ExpenseTracker } from "@/components/ExpenseTracker"
@@ -11,10 +12,10 @@ import Transaction from "@/components/classes/Transaction"
 import Category from "@/components/classes/Category"
 import UserData from "@/components/classes/UserData"
 
-const transaction1 = new Transaction('1', new Date('2024-12-15'), 85.50, 'expense', 'Chevron', '1');
-const transaction2 = new Transaction('2', new Date('2024-12-14'), 40.00, 'expense', 'Game', '2');
-const transaction3 = new Transaction('2', new Date('2024-12-14'), 40.00, 'expense', 'Movie Theater', '2');
-const transaction4 = new Transaction('3', new Date('2024-12-13'), 1200.00, 'income', 'Salary', '0');
+const transaction1 = new Transaction('1', new Date('2025-10-15'), 85.50, 'expense', 'Chevron', '1');
+const transaction2 = new Transaction('2', new Date('2025-10-15'), 40.00, 'expense', 'Game', '2');
+const transaction3 = new Transaction('3', new Date('2025-10-15'), 40.00, 'expense', 'Movie Theater', '2');
+const transaction4 = new Transaction('4', new Date('2025-10-15'), 1200.00, 'income', 'Salary', '0');
 
 const category1 = new Category('0', new Date(), 'Income', '#ffffff', 0);
 const category2 = new Category('1', new Date(), 'Transportation', '#ef4444', 500);
@@ -27,6 +28,8 @@ export default function App() {
   const [userData, setUserData] = useState<UserData>(sampleUserData)
   const [categories, setCategories] = useState<Category[]>(userData.getCategories())
   const [transactions, setTransactions] = useState<Transaction[]>([transaction1, transaction2, transaction3, transaction4])
+  const [monthYear, setMonthYear] = useState<string>(`${new Date().getMonth()}-${new Date().getFullYear()}`)
+  const [transactionsTabSearchQuery, setTransactionsTabSearchQuery] = useState<string>(`@date:${monthYear}`)
 
   // Load data from localStorage on mount
   // useEffect(() => {
@@ -56,6 +59,12 @@ export default function App() {
     setTransactions(updatedTransactions)
   }
 
+  const monthNumbertoName = (monthNumber: number): string => {
+    const date = new Date()
+    date.setMonth(monthNumber)
+    return date.toLocaleString('default', { month: 'long' })
+  }
+
   useEffect(() => {
     if (categories) {
       const updatedUserData = new UserData()
@@ -64,6 +73,10 @@ export default function App() {
       setUserData(updatedUserData)
     }
   }, [categories, transactions])
+
+  useEffect(() => {
+    setTransactionsTabSearchQuery(`@date:${monthYear}`)
+  }, [monthYear])
 
   return (
     <div className="min-h-screen bg-background">
@@ -74,6 +87,28 @@ export default function App() {
           <p className="text-muted-foreground">
             Manage your finances, track expenses, and achieve your savings goals
           </p>
+        </div>
+
+        <div className="border rounded-md border-foreground/10 w-fit p-2 mb-8 flex flex-row items-center">
+          <h1 className="w-[200px]">Show for Month</h1>
+          <Select value={monthYear} onValueChange={(value: string) => {
+            setMonthYear(value)
+          }}>
+            <SelectTrigger className="">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Array.from({ length: 6 }, (_, index) => {
+                const month = new Date().getMonth() - index
+                const year = new Date().getFullYear()
+                return (
+                  <SelectItem key={index} value={`${month}-${year}`} onClick={() => setTransactionsTabSearchQuery(`@date:${month}-${year}`)}>
+                    {monthNumbertoName(month)} {year}
+                  </SelectItem>
+                )
+              })}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Main Content */}
@@ -100,6 +135,7 @@ export default function App() {
           <TabsContent value="dashboard">
             <BudgetDashboard 
               userData={userData}
+              monthYear={monthYear}
             />
           </TabsContent>
 
@@ -108,6 +144,7 @@ export default function App() {
               userData={userData}
               onUpdateCategories={setCategories}
               onDeleteCategory={(id: string) => handleDeleteCategory(id)}
+              monthYear={monthYear}
             />
           </TabsContent>
 
@@ -115,12 +152,14 @@ export default function App() {
             <ExpenseTracker 
               userData={userData}
               onUpdateTransactions={setTransactions}
+              defaultSearchQuery={transactionsTabSearchQuery}
             />
           </TabsContent>
 
           {<TabsContent value="analytics">
             <BudgetAnalytics 
               userData={userData}
+              monthYear={monthYear}
             />
           </TabsContent>}
         </Tabs>

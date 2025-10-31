@@ -1,13 +1,16 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card } from "./ui/card"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSubContent } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table"
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
+import { Calendar } from "./ui/calendar"
 import { Badge } from "./ui/badge"
-import { Plus, Calendar, DollarSign, ChevronUp, ChevronDown, Upload } from "lucide-react"
+import { Plus, DollarSign, ChevronUp, ChevronDown, Upload, Funnel } from "lucide-react"
 import { StatementImport } from "./StatementImport"
 import UserData from "./classes/UserData"
 import Transaction from "./classes/Transaction"
@@ -15,21 +18,25 @@ import Transaction from "./classes/Transaction"
 interface ExpenseTrackerProps {
   userData: UserData
   onUpdateTransactions: (transactions: Transaction[]) => void
+  defaultSearchQuery?: string
 }
 
 type SortField = 'date' | 'description' | 'category' | 'type' | 'amount'
 type SortDirection = 'asc' | 'desc'
 
-export function ExpenseTracker({ userData, onUpdateTransactions }: ExpenseTrackerProps) {
+export function ExpenseTracker({ userData, onUpdateTransactions, defaultSearchQuery }: ExpenseTrackerProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [description, setDescription] = useState("")
-  const [amount, setAmount] = useState(0)
+  const [amount, setAmount] = useState<number | null>(null)
   const [categoryId, setCategoryId] = useState("")
   const [date, setDate] = useState(new Date())
   const [type, setType] = useState<'expense' | 'income'>('expense')
+  const [formError, setFormError] = useState<string | null>(null)
   const [sortField, setSortField] = useState<SortField>('date')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
+  const [searchQuery, setSearchQuery] = useState(defaultSearchQuery || '')
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -48,12 +55,18 @@ export function ExpenseTracker({ userData, onUpdateTransactions }: ExpenseTracke
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!description) setFormError("Please enter a description")
+    else if (!categoryId) setFormError("Please select a category")
+    else if (!amount) setFormError("Please enter an amount")
+    else if (amount <= 0) setFormError("Please enter an amount that is greater than zero")
+    else if (!date) setFormError("Please select a date")
+    else setFormError(null)
     
-    if (!description || !categoryId || !amount || !date) return
-    if (amount <= 0) return
+    if (!description || !categoryId || !amount || amount <= 0 || !date) return
 
     const newTransaction = new Transaction(
-      Date.now().toString(),
+      userData.findMaxId(userData.getTransactions()) + 1 + "",
       new Date(date),
       amount,
       type,
@@ -86,15 +99,17 @@ export function ExpenseTracker({ userData, onUpdateTransactions }: ExpenseTracke
     if (type === 'expense') {
       return userData.getCategories().filter(category => category.getId() !== "0")
     } else {
-      return []
+      return userData.getCategories().filter(category => category.getId() === "0")
     }
   }
 
-  // const checkTransactions = (): boolean => {
-  //   const newTransactions = userData.getTransactions().filter(transaction => userData.getCategoryById(transaction.getCategoryId()) !== undefined)
-  //   onUpdateTransactions(newTransactions)
-  //   return true
-  // }
+  useEffect(() => {
+    if (type === 'income') {
+      setCategoryId("0")
+    } else {
+      setCategoryId("")
+    }
+  }, [type])
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -107,8 +122,24 @@ export function ExpenseTracker({ userData, onUpdateTransactions }: ExpenseTracke
     }
   }
 
+  const getSearchFilteredTransactions = (transactions: Transaction[]) => {
+    const query = searchQuery.toLowerCase().trim()
+    if (query === "") return transactions
+
+    return transactions.filter(transaction => {
+      const descriptionMatch = transaction.getDescription().toLowerCase().includes(query)
+      const category = userData.getCategoryById(transaction.getCategoryId())
+      const categoryMatch = category ? category.getName().toLowerCase().includes(query.replace("@cat:", "").trim()) : false
+      const typeMatch = transaction.getType().toLowerCase() === query.replace("@type:", "").trim()
+      const {month, year} = userData.parseMonthYear(query.replace("@date:", "").trim())
+      const dateMatch = transaction.getDate().getMonth() === month && transaction.getDate().getFullYear() === year
+
+      return descriptionMatch || categoryMatch || typeMatch || dateMatch
+    })
+  }
+
   const getSortedTransactions = () => {
-    return [...userData.getTransactions()].sort((a, b) => {
+    return [...getSearchFilteredTransactions(userData.getTransactions())].sort((a, b) => {
       let aValue: string | number
       let bValue: string | number
 
@@ -158,6 +189,11 @@ export function ExpenseTracker({ userData, onUpdateTransactions }: ExpenseTracke
       <ChevronDown className="w-4 h-4" />
   }
 
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseFloat(e.target.value)
+    setAmount(isNaN(value) ? null : value)
+  }
+
   // const handleImportTransactions = (importedTransactions: Transaction[]) => {
   //   // Add imported transactions to existing transactions
   //   onUpdateTransactions([...transactions, ...importedTransactions])
@@ -191,7 +227,7 @@ export function ExpenseTracker({ userData, onUpdateTransactions }: ExpenseTracke
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2>Expense Tracker</h2>
+        <h2>Transaction Tracker</h2>
         <div className="flex items-center gap-2">
           <Button variant="outline" onClick={() => setShowImport(true)}>
             <Upload className="w-4 h-4 mr-2" />
@@ -214,7 +250,7 @@ export function ExpenseTracker({ userData, onUpdateTransactions }: ExpenseTracke
                   <Label htmlFor="type" className="pb-2">Type</Label>
                   <Select value={type} onValueChange={(value: 'expense' | 'income') => {
                     setType(value)
-                    setCategoryId("") // Reset category when type changes
+                    setCategoryId("")
                   }}>
                     <SelectTrigger>
                       <SelectValue />
@@ -231,8 +267,8 @@ export function ExpenseTracker({ userData, onUpdateTransactions }: ExpenseTracke
                     id="amount"
                     type="number"
                     step="0.01"
-                    value={amount}
-                    onChange={(e) => setAmount(Number(e.target.value))}
+                    value={amount ?? ""}
+                    onChange={handleAmountChange}
                     placeholder="0.00"
                     required
                   />
@@ -269,13 +305,33 @@ export function ExpenseTracker({ userData, onUpdateTransactions }: ExpenseTracke
 
               <div>
                 <Label htmlFor="date" className="pb-2">Date</Label>
-                <Input
-                  id="date"
-                  type="date"
-                  value={date.toDateString()}
-                  onChange={(e) => setDate(new Date(e.target.value))}
-                  required
-                />
+                <Popover open={isCalendarOpen} onOpenChange={setIsCalendarOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      id="date"
+                      className="w-48 justify-between font-normal"
+                    >
+                      {date ? date.toLocaleDateString() : "Select date"}
+                      <ChevronDown className="w-4 h-4 ml-2" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto overflow-hidden p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={date}
+                      captionLayout="dropdown"
+                      onSelect={(date) => {
+                        setDate(date ?? new Date())
+                        setIsCalendarOpen(false)
+                      }}
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              <div className="text-red-600">
+                {formError}
               </div>
 
               <div className="flex gap-2">
@@ -296,9 +352,56 @@ export function ExpenseTracker({ userData, onUpdateTransactions }: ExpenseTracke
         </div>
       </div>
 
+      <div className="grid gap-4">
+        <div className="flex items-center justify-between gap-4 relative">
+          <Input
+            type="search"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search transactions... (@cat:[name] for category search | @type:[expense/income] for type search | @date:[month-year] for date search)"
+          />
+          <div className="absolute right-8 top-1/4">
+            <DropdownMenu>
+              <DropdownMenuTrigger>
+                <Funnel className="w-4 h-4 text-muted-foreground" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => setSearchQuery(`@date:${new Date().getMonth()}-${new Date().getFullYear()}`)}>Current Month</DropdownMenuItem>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>Categories</DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuSubContent>
+                      {getAvailableCategories().map((category) => (
+                        <DropdownMenuItem 
+                          key={category.getId()} 
+                          onClick={() => setSearchQuery(`@cat:${category.getName()}`)}
+                        >
+                          {category.getName()}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuSub>
+                <DropdownMenuSub>
+                  <DropdownMenuSubTrigger>Type</DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuSubContent>
+                      <DropdownMenuItem onClick={() => setSearchQuery('@type:expense')}>Expense</DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setSearchQuery('@type:income')}>Income</DropdownMenuItem>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuSub>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+        <div className="text-sm text-muted-foreground">
+          {getSortedTransactions().length} {getSortedTransactions().length === 1 ? "transaction" : "transactions"} total
+        </div>
+      </div>
+
       {/* All Transactions */}
-      <Card className="p-6">
-        <h3 className="mb-4">All Transactions ({userData.getTransactions().length})</h3>
+      <div className="py-4">
         {sortedTransactions.length === 0 ? (
           <div className="text-center text-muted-foreground py-8">
             <DollarSign className="w-12 h-12 mx-auto mb-2 opacity-50" />
@@ -361,7 +464,6 @@ export function ExpenseTracker({ userData, onUpdateTransactions }: ExpenseTracke
                 <TableRow key={transaction.getId()}>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-muted-foreground" />
                       {formatDate(transaction.getDate().toString())}
                     </div>
                   </TableCell>
@@ -388,7 +490,7 @@ export function ExpenseTracker({ userData, onUpdateTransactions }: ExpenseTracke
             </TableBody>
           </Table>
         )}
-      </Card>
+      </div>
     </div>
   )
 }

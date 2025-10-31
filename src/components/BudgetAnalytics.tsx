@@ -14,36 +14,33 @@ import {
   YAxis,
 } from 'recharts'
 import UserData from './classes/UserData'
+import { TrendingUp } from 'lucide-react'
 
 interface BudgetAnalyticsProps {
   userData: UserData
+  monthYear: string
 }
 
-export function BudgetAnalytics({ userData }: BudgetAnalyticsProps) {
-  const categories = userData?.getCategories() || []
-  const transactions = userData?.getTransactions() || []
-
-  const incomeCategoryId = "0" // income category
+export function BudgetAnalytics({ userData, monthYear }: BudgetAnalyticsProps) {
+  const {month, year} = userData.parseMonthYear(monthYear)
 
   // Pie chart data: sum of expenses per category (including empty categories)
   const pieData = useMemo(() => {
-    return categories
-      .filter(c => c.getId() !== incomeCategoryId)
+    return userData.getCategories()
+      .filter(c => c.getId() !== "0")
       .map(c => {
-        const spent = transactions
-          .filter(t => String(t.getCategoryId()) === String(c.getId()) && t.getType() === 'expense')
-          .reduce((sum, t) => sum + t.getAmount(), 0)
+        const spent = userData.calculateExpense(c.getId(), month, year)
         return {
           name: c.getName(),
           value: spent,
           color: spent > 0 ? c.getColor() : '#d1d5db', // grey out empty categories
         }
       })
-  }, [categories, transactions])
+  }, [userData, month, year])
 
   // Overview: success/failure status
   const overviewStatus = useMemo(() => {
-    const relevantCategories = categories.filter(c => c.getId() !== incomeCategoryId)
+    const relevantCategories = userData.getCategories().filter(c => c.getId() !== "0")
 
     const successfulCategories = relevantCategories
       .filter(c => {
@@ -66,13 +63,13 @@ export function BudgetAnalytics({ userData }: BudgetAnalyticsProps) {
       success: successfulCategories,
       failures: overBudgetCategories,
     }
-  }, [categories, pieData])
+  }, [userData, pieData])
 
   // Monthly timeline: last 6 months
   const monthlyTrends = useMemo(() => {
     const trends: { [key: string]: { income: number; expenses: number; savings: number } } = {}
 
-    transactions.forEach(t => {
+    userData.getTransactions().forEach(t => {
       const monthKey = t.getDate().toLocaleDateString('en-US', { year: 'numeric', month: 'short' })
       if (!trends[monthKey]) trends[monthKey] = { income: 0, expenses: 0, savings: 0 }
 
@@ -88,7 +85,7 @@ export function BudgetAnalytics({ userData }: BudgetAnalyticsProps) {
       .map(([month, data]) => ({ month, ...data }))
       .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime())
       .slice(-6)
-  }, [transactions])
+  }, [userData])
 
   return (
     <div className="space-y-6">
@@ -99,16 +96,16 @@ export function BudgetAnalytics({ userData }: BudgetAnalyticsProps) {
         </CardHeader>
         <CardContent className="grid grid-cols-4 text-left gap-4">
           <div>
-            <h3 className="text-sm font-medium text-green-600">Success {overviewStatus.success.length}</h3>
-            <ul className="text-xs text-muted-foreground list-disc list-inside mt-1">
+            <h3 className="font-medium text-green-600">Success ({overviewStatus.success.length})</h3>
+            <ul className="text-muted-foreground list-disc list-inside mt-1">
               {overviewStatus.success.map((cat, idx) => (
                 <li key={idx}>{cat}</li>
               ))}
             </ul>
           </div>
           <div>
-            <h3 className="text-sm font-medium text-red-600">Failures {overviewStatus.failures.length}</h3>
-            <ul className="text-xs text-muted-foreground list-disc list-inside mt-1">
+            <h3 className="font-medium text-red-600">Failures ({overviewStatus.failures.length})</h3>
+            <ul className="text-muted-foreground list-disc list-inside mt-1">
               {overviewStatus.failures.map((f, idx) => (
                 <li key={idx}>{f.label}: ${f.spent.toFixed(2)} / ${f.budget.toFixed(2)}</li>
               ))}
@@ -124,7 +121,11 @@ export function BudgetAnalytics({ userData }: BudgetAnalyticsProps) {
         </CardHeader>
         <CardContent className="h-[400px]">
           {pieData.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">No expense transactions yet.</p>
+            <div className="text-center text-muted-foreground py-8">
+              <TrendingUp className="w-12 h-12 mx-auto mb-2 opacity-50" />
+              <p>No transaction expenses from categories yet.</p>
+              <p>Add your first categories with transactions to get started!</p>
+            </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -156,7 +157,11 @@ export function BudgetAnalytics({ userData }: BudgetAnalyticsProps) {
         </CardHeader>
         <CardContent className="h-[400px]">
           {monthlyTrends.length === 0 ? (
-            <p className="text-center text-muted-foreground py-8">No transactions available yet.</p>
+            <div className="text-center text-muted-foreground py-8">
+              <TrendingUp className="w-12 h-12 mx-auto mb-2 opacity-50" />
+              <p>No transaction expenses from categories yet.</p>
+              <p>Add your first categories with transactions to get started!</p>
+            </div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={monthlyTrends}>

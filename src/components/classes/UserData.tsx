@@ -10,6 +10,23 @@ export default class UserData {
         this.transactions = [];
     }
 
+    parseMonthYear(monthYear: string): { month: number; year: number } {
+        if (!monthYear) return { month: new Date().getMonth(), year: new Date().getFullYear() };
+        const [monthStr, yearStr] = monthYear.split('-');
+        return { month: parseInt(monthStr, 10), year: parseInt(yearStr, 10) };
+    }
+
+    findMaxId(array: (Category | Transaction)[]): number {
+        if (array.length === 0) return -1;
+        let maxId = 0;
+        for (let i = 1; i < array.length; i++) {
+            if (Number(array[i].getId()) > maxId) {
+                maxId = Number(array[i].getId());
+            }
+        }
+        return maxId;
+    }
+
     /* CATEGORY METHODS */
     getCategories(): Category[] {
         return this.categories;
@@ -44,53 +61,39 @@ export default class UserData {
         return this.categories.length;
     }
 
-    calculateTotalIncome(): number {
+    calculateTotalIncome(monthYear: string): number {
         let total = 0;
+        const { month, year } = this.parseMonthYear(monthYear);
         this.categories.forEach(category => {
-            total += this.calculateIncome(category.getId());
+            total += this.calculateIncome(category.getId(), month, year);
         });
         return total;
     }
 
-    calculateTotalExpense(): number {
+    calculateTotalExpense(monthYear: string): number {
         let total = 0;
+        const { month, year } = this.parseMonthYear(monthYear);
         this.categories.forEach(category => {
-            total += this.calculateExpense(category.getId());
+            total += this.calculateExpense(category.getId(), month, year);
         });
         return total;
     }
 
-    calculateTotalRemainingBudget(): number {
+    calculateTotalRemainingBudget(monthYear: string): number {
         let total = 0;
+        const { month, year } = this.parseMonthYear(monthYear);
         this.categories.forEach(category => {
-            total += this.calculateRemainingBudget(category.getId());
+            total += this.calculateRemainingBudget(category.getId(), month, year);
         });
         return total;
     }
 
-    calculateSavingRate(): number {
-        const totalIncome = this.calculateTotalIncome();
-        const totalExpense = this.calculateTotalExpense();
+    calculateSavingRate(monthYear: string): number {
+        const totalIncome = this.calculateTotalIncome(monthYear);
+        const totalExpense = this.calculateTotalExpense(monthYear);
         if (totalIncome === 0) return 0;
         return ((totalIncome - totalExpense) / totalIncome) * 100;
     }
-
-    // sortCategoryDate(): void {
-    //     this.categories.forEach(category => category.sortDate());
-    // }
-
-    // sortCategoryName(): void {
-    //     this.categories.sort((a, b) => a.getName().localeCompare(b.getName()));
-    // }
-
-    // searchCategoryDate(date: Date): Category[] {
-    //     return this.categories.filter(category => {
-    //         const categoryDate = category.getDate();
-    //         return categoryDate.getFullYear() === date.getFullYear() &&
-    //                categoryDate.getMonth() === date.getMonth() &&
-    //                categoryDate.getDate() === date.getDate();
-    //     });
-    // }
 
     /* TRANSACTION METHODS */
     getTransactions(): Transaction[] {
@@ -125,44 +128,35 @@ export default class UserData {
         return this.transactions.length;
     }
 
-    calculateIncome(categoryId: string): number {
+    calculateIncome(categoryId: string, month: number, year: number): number {
         return this.transactions
-            .filter(transaction => transaction.getType() === 'income' && transaction.getCategoryId() === categoryId)
+            .filter(transaction => 
+                transaction.getType() === 'income' && transaction.getCategoryId() === categoryId && 
+                transaction.getDate().getMonth() === month &&
+                transaction.getDate().getFullYear() === year
+            )
             .reduce((sum, transaction) => sum + transaction.getAmount(), 0);
     }
 
-    calculateExpense(castegoryId: string): number {
+    calculateExpense(castegoryId: string, month: number, year: number): number {
         return this.transactions
-            .filter(transaction => transaction.getType() === 'expense' && transaction.getCategoryId() === castegoryId)
+            .filter(transaction => 
+                transaction.getType() === 'expense' && transaction.getCategoryId() === castegoryId && 
+                transaction.getDate().getMonth() === month &&
+                transaction.getDate().getFullYear() === year
+            )
             .reduce((sum, transaction) => sum + transaction.getAmount(), 0);
     }
 
-    calculateRemainingBudget(categoryId: string): number {
+    calculateRemainingBudget(categoryId: string, month: number, year: number): number {
         const category = this.getCategoryById(categoryId);
         if (!category) return 0;
-        return category.getBudget() - this.calculateExpense(categoryId);
+        return category.getBudget() - this.calculateExpense(categoryId, month, year);
     }
 
-    calculateUsage(categoryId: string): number {
+    calculateUsage(categoryId: string, month: number, year: number): number {
         const category = this.getCategoryById(categoryId);
         if (!category) return 0;
-        return category.getBudget() === 0 ? 0 : (this.calculateExpense(categoryId) / category.getBudget()) * 100;
-    }
-
-    sortTransactionDate(): void {
-        this.transactions.sort((a, b) => b.getDate().getTime() - a.getDate().getTime());
-    }
-
-    sortTransactionAmount(): void {
-        this.transactions.sort((a, b) => b.getAmount() - a.getAmount());
-    }
-
-    searchTransactionDate(date: Date): Transaction[] {
-        return this.transactions.filter(transaction => {
-            const transactionDate = transaction.getDate();
-            return transactionDate.getFullYear() === date.getFullYear() &&
-                   transactionDate.getMonth() === date.getMonth() &&
-                   transactionDate.getDate() === date.getDate();
-        });
+        return category.getBudget() === 0 ? 0 : (this.calculateExpense(categoryId, month, year) / category.getBudget()) * 100;
     }
 }

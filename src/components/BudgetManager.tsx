@@ -3,10 +3,9 @@ import { Card } from "./ui/card"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select"
 import { RadioGroup, RadioGroupItem } from "./ui/radio-group"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "./ui/dialog"
-import { Plus, Edit, Trash2 } from "lucide-react"
+import { Plus, Edit, Trash2, PlusCircle } from "lucide-react"
 import UserData from "./classes/UserData"
 import Category from "./classes/Category"
 
@@ -14,29 +13,28 @@ interface BudgetManagerProps {
   userData: UserData
   onUpdateCategories: (categories: Category[]) => void
   onDeleteCategory?: (id: string) => void
+  monthYear: string
 }
 
-export function BudgetManager({ userData, onUpdateCategories, onDeleteCategory }: BudgetManagerProps) {
+export function BudgetManager({ userData, onUpdateCategories, onDeleteCategory, monthYear }: BudgetManagerProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
-  //const [dialogMode, setDialogMode] = useState<"edit" | "delete">("edit")
   const [editingBudget, setEditingBudget] = useState<Category | null>(null)
   const [name, setName] = useState("")
   const [color, setColor] = useState("")
   const [budget, setBudget] = useState<number | null>(null)
-  const [type, setType] = useState<'name' | 'date'>('name')
   const [formError, setFormError] = useState<string | null>(null)
 
   const colorOptions = [
-    { name: "Red", label: "#ef4444" },
-    { name: "Orange", label: "#f97316" },
-    { name: "Yellow", label: "#eab308" },
-    { name: "Green", label: "#22c55e" },
-    { name: "Teal", label: "#06b6d4" },
-    { name: "Blue", label: "#3b82f6" },
-    { name: "Purple", label: "#8b5cf6" },
-    { name: "Pink", label: "#ec4899" },
-    { name: "Amber", label: "#f59e0b" },
-    { name: "Emerald", label: "#10b981" }
+    { name: "Red", label: "#ff4000" },
+    { name: "Green", label: "#25ac1b" },
+    { name: "Amber", label: "#ffbf00" },
+    { name: "Teal", label: "#4fb9af" },
+    { name: "Orange", label: "#ffa500" },
+    { name: "Blue", label: "#0040ff" },
+    { name: "Yellow", label: "#fcf55f" },
+    { name: "Purple", label: "#bf00ff" },
+    { name: "Lime", label: "#bfff00" },
+    { name: "Pink", label: "#ff00bf" }
   ]
 
   const formatCurrency = (amount: number) => {
@@ -74,7 +72,7 @@ export function BudgetManager({ userData, onUpdateCategories, onDeleteCategory }
     } else {
       // Add new category
       const newCategory = new Category(
-        Date.now().toString(),
+        userData.findMaxId(userData.getCategories()) + 1 + "",
         new Date(),
         name,
         color,
@@ -117,6 +115,12 @@ export function BudgetManager({ userData, onUpdateCategories, onDeleteCategory }
     setBudget(isNaN(value) ? null : value)
   }
 
+  const parseMonthYear = (monthYear: string): { month: number; year: number } => {
+    if (!monthYear) return { month: new Date().getMonth(), year: new Date().getFullYear() };
+    const [monthStr, yearStr] = monthYear.split('-');
+    return { month: parseInt(monthStr, 10), year: parseInt(yearStr, 10) };
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -143,7 +147,7 @@ export function BudgetManager({ userData, onUpdateCategories, onDeleteCategory }
                 <Input
                   id="name"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => setName(e.target.value.split(" ")[0])}
                   placeholder="e.g., Groceries, Entertainment"
                   required
                 />
@@ -200,39 +204,18 @@ export function BudgetManager({ userData, onUpdateCategories, onDeleteCategory }
       </div>
 
       <div className="grid gap-4">
-        <div className="flex items-center justify-between gap-4">
-          <Input
-            type="search"
-            placeholder="Search categories..."
-          />
-          <Select value={type} onValueChange={(value: 'name' | 'date') => {
-            setType(value)
-          }}>
-            <SelectTrigger className="w-[30%]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="name">Sort by Name</SelectItem>
-              <SelectItem value="date">Sort by Date</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div className="text-sm text-muted-foreground">
-          {userData.getCategories().length - 1} {userData.getCategories().length === 1 ? "category" : "categories"} total
-        </div>
-      </div>
-
-      <div className="grid gap-4">
-        {userData.getCategories().length === 0 ? (
-          <Card className="p-8 text-center text-muted-foreground">
-            <p>No budget categories yet.</p>
-            <p>Add your first category to get started!</p>
-          </Card>
+        {userData.getCategories().length - 1 === 0 ? (
+          <div className="text-center text-muted-foreground py-8">
+            <PlusCircle className="w-12 h-12 mx-auto mb-2 opacity-50" />
+            <p>No categories yet.</p>
+            <p>Add your first categories to get started!</p>
+          </div>
         ) : (
           userData.getCategories().map((category) => {
             if (category.getId() === "0") return null // Skip default category
-            const percentage = userData.calculateUsage(category.getId())
-            const remaining = userData.calculateRemainingBudget(category.getId())
+            const { month, year } = parseMonthYear(monthYear);
+            const percentage = userData.calculateUsage(category.getId(), month, year);
+            const remaining = userData.calculateRemainingBudget(category.getId(), month, year);
             
             return (
               <Card key={category.getId()} className="p-4">
@@ -245,7 +228,7 @@ export function BudgetManager({ userData, onUpdateCategories, onDeleteCategory }
                     <div>
                       <h4>{category.getName()}</h4>
                       <p className="text-sm text-muted-foreground">
-                        {formatCurrency(userData.calculateExpense(category.getId()))} of {formatCurrency(category.getBudget())} spent
+                        {formatCurrency(userData.calculateExpense(category.getId(), month, year))} of {formatCurrency(category.getBudget())} spent
                       </p>
                     </div>
                   </div>
