@@ -10,10 +10,10 @@ export default class UserData {
         this.transactions = [];
     }
 
-    parseMonthYear(monthYear: string): { month: number; year: number } {
+    parseMonthYear(monthYear: string): { month: number; year: number } { // month 0-11
         if (!monthYear) return { month: new Date().getMonth(), year: new Date().getFullYear() };
         const [monthStr, yearStr] = monthYear.split('-');
-        return { month: parseInt(monthStr, 10), year: parseInt(yearStr, 10) };
+        return { month: parseInt(monthStr, 10) - 1, year: parseInt(yearStr, 10) };
     }
 
     findMaxId(array: (Category | Transaction)[]): number {

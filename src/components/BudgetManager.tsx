@@ -115,12 +115,6 @@ export function BudgetManager({ userData, onUpdateCategories, onDeleteCategory, 
     setBudget(isNaN(value) ? null : value)
   }
 
-  const parseMonthYear = (monthYear: string): { month: number; year: number } => {
-    if (!monthYear) return { month: new Date().getMonth(), year: new Date().getFullYear() };
-    const [monthStr, yearStr] = monthYear.split('-');
-    return { month: parseInt(monthStr, 10), year: parseInt(yearStr, 10) };
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -213,7 +207,7 @@ export function BudgetManager({ userData, onUpdateCategories, onDeleteCategory, 
         ) : (
           userData.getCategories().map((category) => {
             if (category.getId() === "0") return null // Skip default category
-            const { month, year } = parseMonthYear(monthYear);
+            const { month, year } = userData.parseMonthYear(monthYear);
             const percentage = userData.calculateUsage(category.getId(), month, year);
             const remaining = userData.calculateRemainingBudget(category.getId(), month, year);
             

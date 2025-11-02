@@ -1,5 +1,3 @@
-import Transaction from "./Transaction";
-
 export default class Category {
     private id: string; // primary key
     private date: Date; // final

@@ -366,7 +366,7 @@ export function ExpenseTracker({ userData, onUpdateTransactions, defaultSearchQu
                 <Funnel className="w-4 h-4 text-muted-foreground" />
               </DropdownMenuTrigger>
               <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => setSearchQuery(`@date:${new Date().getMonth()}-${new Date().getFullYear()}`)}>Current Month</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setSearchQuery(`@date:${new Date().getMonth() + 1}-${new Date().getFullYear()}`)}>Current Month</DropdownMenuItem>
                 <DropdownMenuSub>
                   <DropdownMenuSubTrigger>Categories</DropdownMenuSubTrigger>
                   <DropdownMenuPortal>

@@ -3,10 +3,12 @@ import { useState, useEffect } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Button } from "@/components/ui/button"
 import { BudgetDashboard } from "@/components/BudgetDashboard"
 import { BudgetManager } from "@/components/BudgetManager"
 import { ExpenseTracker } from "@/components/ExpenseTracker"
 import { BudgetAnalytics } from "@/components/BudgetAnalytics"
+import { ThemeToggle } from "@/components/ThemeToggle"
 import { BarChart3, PlusCircle, DollarSign, TrendingUp } from "lucide-react"
 import Transaction from "@/components/classes/Transaction"
 import Category from "@/components/classes/Category"
@@ -28,7 +30,7 @@ export default function App() {
   const [userData, setUserData] = useState<UserData>(sampleUserData)
   const [categories, setCategories] = useState<Category[]>(userData.getCategories())
   const [transactions, setTransactions] = useState<Transaction[]>([transaction1, transaction2, transaction3, transaction4])
-  const [monthYear, setMonthYear] = useState<string>(`${new Date().getMonth()}-${new Date().getFullYear()}`)
+  const [monthYear, setMonthYear] = useState<string>(`${new Date().getMonth() + 1}-${new Date().getFullYear()}`) // month 1-12
   const [transactionsTabSearchQuery, setTransactionsTabSearchQuery] = useState<string>(`@date:${monthYear}`)
 
   // Load data from localStorage on mount
@@ -80,35 +82,39 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-background">
+      {/* Header */}
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="mb-2">EVA Budget</h1>
-          <p className="text-muted-foreground">
-            Manage your finances, track expenses, and achieve your savings goals
-          </p>
-        </div>
-
-        <div className="border rounded-md border-foreground/10 w-fit p-2 mb-8 flex flex-row items-center">
-          <h1 className="w-[200px]">Show for Month</h1>
-          <Select value={monthYear} onValueChange={(value: string) => {
-            setMonthYear(value)
-          }}>
-            <SelectTrigger className="">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {Array.from({ length: 6 }, (_, index) => {
-                const month = new Date().getMonth() - index
-                const year = new Date().getFullYear()
-                return (
-                  <SelectItem key={index} value={`${month}-${year}`} onClick={() => setTransactionsTabSearchQuery(`@date:${month}-${year}`)}>
-                    {monthNumbertoName(month)} {year}
-                  </SelectItem>
-                )
-              })}
-            </SelectContent>
-          </Select>
+        <div className="flex flex-row items-center justify-between">
+          <div className="mb-8">
+            <h1 className="mb-2">EVA Budget</h1>
+            <p className="text-muted-foreground">
+              Manage your finances, track expenses, and achieve your savings goals
+            </p>
+          </div>
+          <div className="border rounded-md border-foreground/10 w-fit p-2 mb-8 flex flex-row items-center">
+            <h1 className="w-[200px]">Show for Month</h1>
+            <Select value={monthYear} onValueChange={(value: string) => {
+              setMonthYear(value)
+            }}>
+              <SelectTrigger className="">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: 6 }, (_, index) => {
+                  const month = new Date().getMonth() - index
+                  const year = new Date().getFullYear()
+                  return (
+                    <SelectItem key={index} value={`${month + 1}-${year}`} onClick={() => setTransactionsTabSearchQuery(`@date:${month + 1}-${year}`)}>
+                      {monthNumbertoName(month)} {year}
+                    </SelectItem>
+                  )
+                })}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="mb-8">
+            <ThemeToggle />
+          </div>
         </div>
 
         {/* Main Content */}
