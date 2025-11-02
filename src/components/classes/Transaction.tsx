@@ -1,8 +1,8 @@
 export default class Transaction {
     private id: string; // primary key
-    private date: Date; // final
-    private amount: number; // final
-    private type: 'expense' | 'income'; // final
+    private date: Date; // changeable
+    private amount: number; // changeable
+    private type: 'expense' | 'income'; // changeable
     private description: string; // changeable
     private categoryId: string; // changeable
 

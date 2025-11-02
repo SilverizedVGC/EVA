@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover"
 import { Calendar } from "./ui/calendar"
 import { Badge } from "./ui/badge"
-import { Plus, DollarSign, ChevronUp, ChevronDown, Upload, Funnel } from "lucide-react"
+import { Plus, DollarSign, ChevronUp, ChevronDown, Upload, Funnel, Edit, Trash2 } from "lucide-react"
 import { StatementImport } from "./StatementImport"
 import UserData from "./classes/UserData"
 import Transaction from "./classes/Transaction"
@@ -27,6 +27,7 @@ type SortDirection = 'asc' | 'desc'
 export function ExpenseTracker({ userData, onUpdateTransactions, defaultSearchQuery }: ExpenseTrackerProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isCalendarOpen, setIsCalendarOpen] = useState(false)
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null)
   const [showImport, setShowImport] = useState(false)
   const [description, setDescription] = useState("")
   const [amount, setAmount] = useState<number | null>(null)
@@ -65,16 +66,33 @@ export function ExpenseTracker({ userData, onUpdateTransactions, defaultSearchQu
     
     if (!description || !categoryId || !amount || amount <= 0 || !date) return
 
-    const newTransaction = new Transaction(
-      userData.findMaxId(userData.getTransactions()) + 1 + "",
-      new Date(date),
-      amount,
-      type,
-      description,
-      categoryId
-    )
-
-    onUpdateTransactions([...userData.getTransactions(), newTransaction])
+    if (editingTransaction) {
+      // Update existing transaction
+      const updatedTransactions = userData.getTransactions().map(transaction =>
+        transaction.getId() === editingTransaction.getId()
+          ? new Transaction(
+              transaction.getId(),
+              new Date(date),
+              amount,
+              type,
+              description,
+              categoryId
+            )
+          : transaction
+      )
+      onUpdateTransactions(updatedTransactions)
+    } else {
+      // Add new transaction
+      const newTransaction = new Transaction(
+        userData.findMaxId(userData.getTransactions()) + 1 + "",
+        new Date(date),
+        amount,
+        type,
+        description,
+        categoryId
+      )
+      onUpdateTransactions([...userData.getTransactions(), newTransaction])
+    }
 
     // Update budget spent amount if it's an expense
     // if (type === 'expense') {
@@ -92,7 +110,32 @@ export function ExpenseTracker({ userData, onUpdateTransactions, defaultSearchQu
     setDescription("")
     setCategoryId("")
     setType('expense')
+    setEditingTransaction(null)
     setIsDialogOpen(false)
+  }
+
+  const handleEdit = (transaction: Transaction) => {
+    setDate(new Date(transaction.getDate()))
+    setAmount(transaction.getAmount())
+    setType(transaction.getType())
+    setDescription(transaction.getDescription())
+    setCategoryId(transaction.getCategoryId())
+    setEditingTransaction(transaction)
+    setIsDialogOpen(true)
+  }
+
+  const handleDelete = (id: string) => {
+    const updatedTransactions = userData.getTransactions().filter(t => t.getId() !== id)
+    onUpdateTransactions(updatedTransactions)
+  }
+
+  const resetForm = () => {
+    setDate(new Date())
+    setAmount(0)
+    setType('expense')
+    setDescription("")
+    setCategoryId("")
+    setEditingTransaction(null)
   }
 
   const getAvailableCategories = () => {
@@ -233,7 +276,10 @@ export function ExpenseTracker({ userData, onUpdateTransactions, defaultSearchQu
             <Upload className="w-4 h-4 mr-2" />
             Import Statement
           </Button>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={open => {
+            setIsDialogOpen(open)
+            if (!open) resetForm()
+          }}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="w-4 h-4 mr-2" />
@@ -242,7 +288,9 @@ export function ExpenseTracker({ userData, onUpdateTransactions, defaultSearchQu
             </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add Transaction</DialogTitle>
+              <DialogTitle>
+                {editingTransaction ? "Edit" : "Add"} Transaction
+              </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -336,7 +384,7 @@ export function ExpenseTracker({ userData, onUpdateTransactions, defaultSearchQu
 
               <div className="flex gap-2">
                 <Button type="submit" className="flex-1">
-                  Add Transaction
+                  {editingTransaction ? "Save" : "Add"} Transaction
                 </Button>
                 <Button 
                   type="button" 
@@ -457,6 +505,13 @@ export function ExpenseTracker({ userData, onUpdateTransactions, defaultSearchQu
                     <SortIcon field="amount" />
                   </div>
                 </TableHead>
+                <TableHead 
+                  className="text-right cursor-pointer hover:bg-muted/50 select-none"
+                >
+                  <div className="flex items-center justify-end gap-2">
+                    
+                  </div>
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -484,6 +539,24 @@ export function ExpenseTracker({ userData, onUpdateTransactions, defaultSearchQu
                     <span className={transaction.getType() === 'income' ? 'text-green-600' : 'text-red-600'}>
                       {transaction.getType() === 'income' ? '+' : '-'}{formatCurrency(transaction.getAmount())}
                     </span>
+                  </TableCell>
+                  <TableCell className="flex items-center justify-center">
+                    <div className="flex items-center justify-around">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEdit(transaction)}
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(transaction.getId())}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

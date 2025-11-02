@@ -89,11 +89,11 @@ export function BudgetManager({ userData, onUpdateCategories, onDeleteCategory, 
     setIsDialogOpen(false)
   }
 
-  const handleEdit = ([category, name, color, budget]: [category: Category, name: string, color: string, budget: number]) => {
+  const handleEdit = (category: Category) => {
+    setName(category.getName())
+    setColor(category.getColor())
+    setBudget(category.getBudget())
     setEditingBudget(category)
-    setName(name)
-    setColor(color)
-    setBudget(budget)
     setIsDialogOpen(true)
   }
 
@@ -132,7 +132,7 @@ export function BudgetManager({ userData, onUpdateCategories, onDeleteCategory, 
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                {editingBudget ? "Edit Budget Category" : "Add Budget Category"}
+                {editingBudget ? "Edit" : "Add"} Category
               </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -146,6 +146,7 @@ export function BudgetManager({ userData, onUpdateCategories, onDeleteCategory, 
                   required
                 />
               </div>
+
               <div>
                 <Label className="pb-2">Category Color</Label>
                 <RadioGroup defaultValue={color} className="grid grid-cols-2">
@@ -165,6 +166,7 @@ export function BudgetManager({ userData, onUpdateCategories, onDeleteCategory, 
                   ))}
                 </RadioGroup>
               </div>
+
               <div>
                 <Label htmlFor="amount" className="pb-2">Monthly Budget</Label>
                 <Input
@@ -177,9 +179,11 @@ export function BudgetManager({ userData, onUpdateCategories, onDeleteCategory, 
                   required
                 />
               </div>
+
               <div className="text-red-600">
                 {formError}
               </div>
+
               <div className="flex gap-2">
                 <Button type="submit" className="flex-1">
                   {editingBudget ? "Update" : "Add"} Category
@@ -239,7 +243,7 @@ export function BudgetManager({ userData, onUpdateCategories, onDeleteCategory, 
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleEdit([category, category.getName(), category.getColor(), category.getBudget()])}
+                        onClick={() => handleEdit(category)}
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
