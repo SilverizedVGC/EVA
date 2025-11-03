@@ -218,7 +218,7 @@ export function ExpenseTracker({
 
   const getSortedTransactions = () => {
     return [...getSearchFilteredTransactions(userData.getTransactions())].sort((a, b) => {
-      let aVal: any, bVal: any;
+      let aVal, bVal;
 
       switch (sortField) {
         case "date":
@@ -310,9 +310,9 @@ export function ExpenseTracker({
       onUpdateTransactions([...userData.getTransactions(), ...mapped]);
       setProcessingStatus("Imported successfully!");
       setTimeout(closeImport, 1200);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      alert("Import failed: " + (err?.message || "Unknown error"));
+      if (err instanceof Error) alert("Import failed: " + (err.message || "Unknown error"));
     } finally {
       setIsProcessing(false);
     }

@@ -82,10 +82,7 @@ export function BudgetManager({ userData, onUpdateCategories, onDeleteCategory, 
     }
 
     // Reset form
-    setName("")
-    setColor("")
-    setBudget(0)
-    setEditingBudget(null)
+    resetForm()
     setIsDialogOpen(false)
   }
 
@@ -108,6 +105,7 @@ export function BudgetManager({ userData, onUpdateCategories, onDeleteCategory, 
     setColor("")
     setBudget(0)
     setEditingBudget(null)
+    setFormError(null)
   }
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -1,7 +1,10 @@
 'use client'
 import { useState, useEffect } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { BudgetDashboard } from "@/components/BudgetDashboard"
 import { BudgetManager } from "@/components/BudgetManager"
@@ -26,6 +29,8 @@ sampleUserData.setCategories([category1, category2, category3]);
 sampleUserData.setTransactions([transaction1, transaction2, transaction3, transaction4]);
 
 export default function App() {
+  const [logState, setLogState] = useState<boolean>(true)
+  const [loogedIn, setLoggedIn] = useState<boolean>(false)
   const [userData, setUserData] = useState<UserData>(sampleUserData)
   const [categories, setCategories] = useState<Category[]>(userData.getCategories())
   const [transactions, setTransactions] = useState<Transaction[]>([transaction1, transaction2, transaction3, transaction4])
@@ -81,7 +86,50 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
+      {!loogedIn ? (
+        <div className="container mx-auto px-4 py-8 max-w-7xl flex justify-center items-center">
+          <Card className="w-full max-w-sm">
+            <CardHeader>
+              <CardTitle>{logState ? "Sign In to your account" : "Sign Up to your account"}</CardTitle>
+              <CardDescription>
+                {logState ? "Enter your email below to login to your account" : "Create your account by filling the details below"}
+              </CardDescription>
+              <CardAction>
+                <Button variant="outline" onClick={() => setLogState(!logState)}>{logState ? "Sign Up" : "Sign In"}</Button>
+              </CardAction>
+            </CardHeader>
+            <CardContent>
+              <form>
+                <div className="flex flex-col gap-6">
+                  <div className="grid gap-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="m@example.com"
+                      required
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <div className="flex items-center">
+                      <Label htmlFor="password">Password</Label>
+                    </div>
+                    <Input id="password" type="password" required />
+                  </div>
+                </div>
+              </form>
+            </CardContent>
+            <CardFooter className="flex-col gap-2">
+              <Button type="submit" className="w-full">
+                {logState ? "Sign In" : "Sign Up"}
+              </Button>
+              <Button variant="outline" className="w-full" onClick={() => setLoggedIn(true)}>
+                Dev Pass
+              </Button>
+            </CardFooter>
+          </Card>
+        </div>
+      ) : (
       <div className="container mx-auto px-4 py-8 max-w-7xl">
         <div className="flex flex-row items-center justify-between">
           <div className="mb-8">
@@ -199,6 +247,7 @@ export default function App() {
           </Card>
         )}
       </div>
+      )}
     </div>
   )
 }
