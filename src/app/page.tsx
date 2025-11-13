@@ -2,10 +2,11 @@
 import { useState, useEffect } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
-import { Card, CardAction, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Spinner } from "@/components/ui/spinner"
 import { BudgetDashboard } from "@/components/BudgetDashboard"
 import { BudgetManager } from "@/components/BudgetManager"
 import { ExpenseTracker } from "@/components/ExpenseTracker"
@@ -15,6 +16,7 @@ import { BarChart3, PlusCircle, DollarSign, TrendingUp } from "lucide-react"
 import Transaction from "@/components/classes/Transaction"
 import Category from "@/components/classes/Category"
 import UserData from "@/components/classes/UserData"
+import { sign } from "./firmware"
 
 const category1 = new Category('0', new Date(), 'Income', '#ffffff', 0);
 const category2 = new Category('1', new Date(), 'Uncategorized', '#c7c7c7', 0);
@@ -24,6 +26,9 @@ sampleUserData.setCategories([category1, category2]);
 export default function App() {
   const [logState, setLogState] = useState<boolean>(true)
   const [loogedIn, setLoggedIn] = useState<boolean>(false)
+  const [sessionToken, setSessionToken] = useState<string[]>(["", "", ""])
+  const [processingStatus, setProcessingStatus] = useState<boolean>(false)
+  const [formError, setFormError] = useState<string | null>(null)
   const [userData, setUserData] = useState<UserData>(sampleUserData)
   const [categories, setCategories] = useState<Category[]>(userData.getCategories())
   const [transactions, setTransactions] = useState<Transaction[]>(userData.getTransactions())
@@ -52,6 +57,31 @@ export default function App() {
   // useEffect(() => {
   //   localStorage.setItem('transactions', JSON.stringify(transactions))
   // }, [transactions])
+
+  const handleSign = (e: React.FormEvent) => {
+    e.preventDefault()
+
+    setProcessingStatus(true)
+    const sessionId = sign(sessionToken, logState)
+    setSessionToken(["", "", ""])
+
+    if (sessionId) {
+      setSessionToken(["", "", sessionId])
+      setLogState(true)
+      setLoggedIn(true)
+      setFormError(null)
+    } else {
+      setFormError("Invalid email or password")
+    }
+    setProcessingStatus(false)
+  }
+
+  const handleSignOut = () => {
+    setSessionToken(["", "", ""])
+    setLoggedIn(false)
+    setCategories([])
+    setTransactions([])
+  }
 
   const handleDeleteCategory = (id: string) => {
     const updatedTransactions = transactions.filter(transaction => transaction.getCategoryId() !== id)
@@ -92,34 +122,47 @@ export default function App() {
               </CardAction>
             </CardHeader>
             <CardContent>
-              <form>
+              <form onSubmit={handleSign}>
                 <div className="flex flex-col gap-6">
+                  <div className="text-red-600">
+                    {formError}
+                  </div>
                   <div className="grid gap-2">
                     <Label htmlFor="email">Email</Label>
                     <Input
                       id="email"
                       type="email"
+                      value={sessionToken[0]}
+                      onChange={(e) => setSessionToken([e.target.value, sessionToken[1], sessionToken[2]])}
                       placeholder="m@example.com"
                       required
                     />
                   </div>
+                  
                   <div className="grid gap-2">
                     <div className="flex items-center">
                       <Label htmlFor="password">Password</Label>
                     </div>
-                    <Input id="password" type="password" required />
+                    <Input
+                      id="password"
+                      type="password"
+                      value={sessionToken[1]}
+                      onChange={(e) => setSessionToken([sessionToken[0], e.target.value, sessionToken[2]])}
+                      required
+                    />
+                  </div>
+
+                  <div className="grid gap-2">
+                    <Button type="submit" className="w-full">
+                      {processingStatus ? <Spinner /> : logState ? "Sign In" : "Sign Up"}
+                    </Button>
+                    <Button variant="outline" className="w-full" onClick={() => setLoggedIn(true)}>
+                      Dev Pass
+                    </Button>
                   </div>
                 </div>
               </form>
             </CardContent>
-            <CardFooter className="flex-col gap-2">
-              <Button type="submit" className="w-full">
-                {logState ? "Sign In" : "Sign Up"}
-              </Button>
-              <Button variant="outline" className="w-full" onClick={() => setLoggedIn(true)}>
-                Dev Pass
-              </Button>
-            </CardFooter>
           </Card>
         </div>
       ) : (
@@ -152,8 +195,9 @@ export default function App() {
               </SelectContent>
             </Select>
           </div>
-          <div className="mb-8">
+          <div className="mb-8 flex flex-row gap-4">
             <ThemeToggle />
+            <Button onClick={handleSignOut}>Sign Out</Button>
           </div>
         </div>
 

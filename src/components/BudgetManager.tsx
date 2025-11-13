@@ -103,7 +103,7 @@ export function BudgetManager({ userData, onUpdateCategories, onDeleteCategory, 
   const resetForm = () => {
     setName("")
     setColor("")
-    setBudget(0)
+    setBudget(null)
     setEditingBudget(null)
     setFormError(null)
   }
@@ -232,7 +232,7 @@ export function BudgetManager({ userData, onUpdateCategories, onDeleteCategory, 
                   <div className="flex items-center gap-2">
                     <div className="text-right">
                       <p className={remaining >= 0 ? "text-green-600" : "text-red-600"}>
-                        {isUncategorized ? `${formatCurrency(userData.calculateExpense(category.getId(), month, year))} inside` : `${formatCurrency(remaining)} remaining`}
+                        {isUncategorized ? `${formatCurrency(userData.calculateExpense(category.getId(), month, year))}` : `${formatCurrency(remaining)} remaining`}
                       </p>
                       <p className="text-sm text-muted-foreground" hidden={isUncategorized}>
                         {percentage.toFixed(1)}% used

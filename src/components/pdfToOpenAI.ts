@@ -117,8 +117,8 @@ export async function sendPdfToOpenAI(
     "You are a precise extractor of bank statement transactions.",
     "Output a JSON object with property `transactions`.",
     "Each transaction must be: { date:'YYYY-MM-DD', description:string, amount:number, type:'income'|'expense', category:string }.",
-    "Amounts MUST be positive numbers. Exclude headers, balances, subtotals, and running totals.",
-    `For category, choose the closest from this list: ${categoryList}.`,
+    "Amounts MUST be positive numbers. Exclude headers, balances, subtotals, and running totals. Be careful when getting dates to make sure they are correct.",
+    `For category, choose the closest from this list: ${categoryList}. If a transaction is adding value to your account, use the 'Income' category. If a transaction cannot be categorized, use the 'Uncategorized' category.`,
   ].join(" ");
 
   const user = `Statement text:\n"""${statementText}"""`;

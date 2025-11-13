@@ -146,7 +146,7 @@ export function ExpenseTracker({
 
   const resetForm = () => {
     setDate(new Date());
-    setAmount(0);
+    setAmount(null);
     setType("expense");
     setDescription("");
     setCategoryId("");
@@ -309,7 +309,7 @@ export function ExpenseTracker({
 
       onUpdateTransactions([...userData.getTransactions(), ...mapped]);
       setProcessingStatus("Imported successfully!");
-      setTimeout(closeImport, 1200);
+      //setTimeout(closeImport, 1200);
     } catch (err: unknown) {
       console.error(err);
       if (err instanceof Error) alert("Import failed: " + (err.message || "Unknown error"));
