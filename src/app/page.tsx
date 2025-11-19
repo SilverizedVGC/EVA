@@ -58,23 +58,25 @@ export default function App() {
   //   localStorage.setItem('transactions', JSON.stringify(transactions))
   // }, [transactions])
 
-  const handleSign = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSign = async (e: React.FormEvent) => {
+  e.preventDefault();
 
-    setProcessingStatus(true)
-    const sessionId = sign(sessionToken, logState)
-    setSessionToken(["", "", ""])
+  setProcessingStatus(true);
 
-    if (sessionId) {
-      setSessionToken(["", "", sessionId])
-      setLogState(true)
-      setLoggedIn(true)
-      setFormError(null)
-    } else {
-      setFormError("Invalid email or password")
-    }
-    setProcessingStatus(false)
+  const sessionId = await sign(sessionToken, logState);
+
+  if (sessionId) {
+    setSessionToken(["", "", sessionId]);
+    setLogState(true);
+    setLoggedIn(true);
+    setFormError(null);
+  } else {
+    setFormError("Invalid email or password");
   }
+
+  setProcessingStatus(false);
+};
+
 
   const handleSignOut = () => {
     setSessionToken(["", "", ""])
