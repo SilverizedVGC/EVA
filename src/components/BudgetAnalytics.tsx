@@ -1,5 +1,6 @@
-import { useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   ResponsiveContainer,
   PieChart,
@@ -22,6 +23,7 @@ interface BudgetAnalyticsProps {
 }
 
 export function BudgetAnalytics({ userData, monthYear }: BudgetAnalyticsProps) {
+  const [chartView, setChartView] = useState<number>(6)
   const {month, year} = userData.parseMonthYear(monthYear)
 
   // Pie chart data: sum of expenses per category (including empty categories)
@@ -86,8 +88,8 @@ export function BudgetAnalytics({ userData, monthYear }: BudgetAnalyticsProps) {
     return Object.entries(trends)
       .map(([month, data]) => ({ month, ...data }))
       .sort((a, b) => new Date(a.month).getTime() - new Date(b.month).getTime())
-      .slice(-6)
-  }, [userData])
+      .slice(-chartView)
+  }, [userData, chartView])
 
   return (
     <div className="space-y-6">
@@ -155,7 +157,25 @@ export function BudgetAnalytics({ userData, monthYear }: BudgetAnalyticsProps) {
       {/* Monthly Trends */}
       <Card>
         <CardHeader>
-          <CardTitle>Monthly Trends (Last 6 Months)</CardTitle>
+          <CardTitle className='w-fit p-2 flex flex-row items-center'>
+            <h1 className='w-[200px]'>Monthly Trends {chartView}</h1>
+            <Select value={`${chartView}`} onValueChange={(value: string) => {
+              setChartView(Number(value))
+            }}>
+              <SelectTrigger className="max-h-24">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {[["0", "All Time"], ["3", "Last 3 Months"], ["6", "Last 6 Months"], ["12", "Last 12 Months"]].map((view, index) => {
+                  return (
+                    <SelectItem key={index} value={view[0]}>
+                      {view[1]}
+                    </SelectItem>
+                  )
+                })}
+              </SelectContent>
+            </Select>
+          </CardTitle>
         </CardHeader>
         <CardContent className="h-[400px]">
           {monthlyTrends.length === 0 ? (

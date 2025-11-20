@@ -84,29 +84,6 @@ export default function App() {
   const [monthYear, setMonthYear] = useState<string>(`${new Date().getMonth() + 1}-${new Date().getFullYear()}`) // month 1-12
   const [transactionsTabSearchQuery, setTransactionsTabSearchQuery] = useState<string>(`@date:${monthYear}`)
 
-  // Load data from localStorage on mount
-  // useEffect(() => {
-  //   const savedBudgets = localStorage.getItem('budgets')
-  //   const savedTransactions = localStorage.getItem('transactions')
-    
-  //   if (savedBudgets) {
-  //     setBudgets(JSON.parse(savedBudgets))
-  //   }
-    
-  //   if (savedTransactions) {
-  //     setTransactions(JSON.parse(savedTransactions))
-  //   }
-  // }, [])
-
-  // Save to localStorage when data changes
-  // useEffect(() => {
-  //   localStorage.setItem('budgets', JSON.stringify(budgets))
-  // }, [budgets])
-
-  // useEffect(() => {
-  //   localStorage.setItem('transactions', JSON.stringify(transactions))
-  // }, [transactions])
-
   const loadUserData = async (sessionId: string) => {
   try {
     const res = await fetch(`/api/user-data?userId=${sessionId}`);
@@ -207,6 +184,29 @@ const handleUpdateTransactions = (updated: Transaction[]) => {
     return date.toLocaleString('default', { month: 'long' })
   }
 
+  const getMonthYears = (): string[] => {
+    const monthYears: string[] = [] // 0-11
+    const currentMonthYear = `${new Date().getMonth()}-${new Date().getFullYear()}`
+    monthYears.push(currentMonthYear)
+
+    if (!transactions.length) {
+      return monthYears
+    }
+
+    transactions.forEach(transaction => {
+      const monthYear = `${transaction.getDate().getMonth()}-${transaction.getDate().getFullYear()}`
+      if (!monthYears.includes(monthYear)) {
+        monthYears.push(monthYear)
+      }
+    })
+    return monthYears.sort((a, b) => {
+      const dateA = new Date(Number(a.split('-')[1]), Number(a.split('-')[0]))
+      const dateB = new Date(Number(b.split('-')[1]), Number(b.split('-')[0]))
+      return dateB.getTime() - dateA.getTime()
+    })
+    
+  }
+
   useEffect(() => {
     if (categories) {
       const updatedUserData = new UserData()
@@ -269,9 +269,6 @@ const handleUpdateTransactions = (updated: Transaction[]) => {
                     <Button type="submit" className="w-full">
                       {processingStatus ? <Spinner /> : logState ? "Sign In" : "Sign Up"}
                     </Button>
-                    <Button variant="outline" className="w-full" onClick={() => setLoggedIn(true)}>
-                      Dev Pass
-                    </Button>
                   </div>
                 </div>
               </form>
@@ -292,13 +289,13 @@ const handleUpdateTransactions = (updated: Transaction[]) => {
             <Select value={monthYear} onValueChange={(value: string) => {
               setMonthYear(value)
             }}>
-              <SelectTrigger className="">
+              <SelectTrigger className="max-h-24">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {Array.from({ length: 6 }, (_, index) => {
-                  const month = new Date().getMonth() - index
-                  const year = new Date().getFullYear()
+                {getMonthYears().map((monthYear, index) => {
+                  const month = Number(monthYear.split('-')[0])
+                  const year = Number(monthYear.split('-')[1])
                   return (
                     <SelectItem key={index} value={`${month + 1}-${year}`} onClick={() => setTransactionsTabSearchQuery(`@date:${month + 1}-${year}`)}>
                       {monthNumbertoName(month)} {year}
